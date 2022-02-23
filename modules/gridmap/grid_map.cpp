@@ -5,8 +5,8 @@
 /*                           GODOT ENGINE                                */
 /*                      https://godotengine.org                          */
 /*************************************************************************/
-/* Copyright (c) 2007-2021 Juan Linietsky, Ariel Manzur.                 */
-/* Copyright (c) 2014-2021 Godot Engine contributors (cf. AUTHORS.md).   */
+/* Copyright (c) 2007-2022 Juan Linietsky, Ariel Manzur.                 */
+/* Copyright (c) 2014-2022 Godot Engine contributors (cf. AUTHORS.md).   */
 /*                                                                       */
 /* Permission is hereby granted, free of charge, to any person obtaining */
 /* a copy of this software and associated documentation files (the       */
@@ -416,8 +416,12 @@ bool GridMap::_octant_update(const OctantKey &p_key) {
 	//erase multimeshes
 
 	for (int i = 0; i < g.multimesh_instances.size(); i++) {
-		VS::get_singleton()->free(g.multimesh_instances[i].instance);
-		VS::get_singleton()->free(g.multimesh_instances[i].multimesh);
+		if (g.multimesh_instances[i].instance.is_valid()) {
+			VS::get_singleton()->free(g.multimesh_instances[i].instance);
+		}
+		if (g.multimesh_instances[i].multimesh.is_valid()) {
+			VS::get_singleton()->free(g.multimesh_instances[i].multimesh);
+		}
 	}
 	g.multimesh_instances.clear();
 
@@ -615,12 +619,18 @@ void GridMap::_octant_clean_up(const OctantKey &p_key) {
 
 	if (g.collision_debug.is_valid()) {
 		VS::get_singleton()->free(g.collision_debug);
-	}
-	if (g.collision_debug_instance.is_valid()) {
-		VS::get_singleton()->free(g.collision_debug_instance);
+		g.collision_debug = RID();
 	}
 
-	PhysicsServer::get_singleton()->free(g.static_body);
+	if (g.collision_debug_instance.is_valid()) {
+		VS::get_singleton()->free(g.collision_debug_instance);
+		g.collision_debug_instance = RID();
+	}
+
+	if (g.static_body.is_valid()) {
+		PhysicsServer::get_singleton()->free(g.static_body);
+		g.static_body = RID();
+	}
 
 	//erase navigation
 	if (navigation) {
@@ -633,8 +643,12 @@ void GridMap::_octant_clean_up(const OctantKey &p_key) {
 	//erase multimeshes
 
 	for (int i = 0; i < g.multimesh_instances.size(); i++) {
-		VS::get_singleton()->free(g.multimesh_instances[i].instance);
-		VS::get_singleton()->free(g.multimesh_instances[i].multimesh);
+		if (g.multimesh_instances[i].instance.is_valid()) {
+			VS::get_singleton()->free(g.multimesh_instances[i].instance);
+		}
+		if (g.multimesh_instances[i].multimesh.is_valid()) {
+			VS::get_singleton()->free(g.multimesh_instances[i].multimesh);
+		}
 	}
 	g.multimesh_instances.clear();
 }
@@ -777,6 +791,7 @@ void GridMap::_update_octants_callback() {
 	}
 
 	while (to_delete.front()) {
+		memdelete(octant_map[to_delete.front()->get()]);
 		octant_map.erase(to_delete.front()->get());
 		to_delete.pop_front();
 	}
@@ -949,7 +964,9 @@ Vector3 GridMap::_get_offset() const {
 
 void GridMap::clear_baked_meshes() {
 	for (int i = 0; i < baked_meshes.size(); i++) {
-		VS::get_singleton()->free(baked_meshes[i].instance);
+		if (baked_meshes[i].instance.is_valid()) {
+			VS::get_singleton()->free(baked_meshes[i].instance);
+		}
 	}
 	baked_meshes.clear();
 

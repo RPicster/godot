@@ -5,8 +5,8 @@
 /*                           GODOT ENGINE                                */
 /*                      https://godotengine.org                          */
 /*************************************************************************/
-/* Copyright (c) 2007-2021 Juan Linietsky, Ariel Manzur.                 */
-/* Copyright (c) 2014-2021 Godot Engine contributors (cf. AUTHORS.md).   */
+/* Copyright (c) 2007-2022 Juan Linietsky, Ariel Manzur.                 */
+/* Copyright (c) 2014-2022 Godot Engine contributors (cf. AUTHORS.md).   */
 /*                                                                       */
 /* Permission is hereby granted, free of charge, to any person obtaining */
 /* a copy of this software and associated documentation files (the       */
@@ -1271,10 +1271,7 @@ void EditorInspector::remove_inspector_plugin(const Ref<EditorInspectorPlugin> &
 	for (int i = idx; i < inspector_plugin_count - 1; i++) {
 		inspector_plugins[i] = inspector_plugins[i + 1];
 	}
-
-	if (idx == inspector_plugin_count - 1) {
-		inspector_plugins[idx] = Ref<EditorInspectorPlugin>();
-	}
+	inspector_plugins[inspector_plugin_count - 1] = Ref<EditorInspectorPlugin>();
 
 	inspector_plugin_count--;
 }

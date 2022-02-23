@@ -5,8 +5,8 @@
 /*                           GODOT ENGINE                                */
 /*                      https://godotengine.org                          */
 /*************************************************************************/
-/* Copyright (c) 2007-2021 Juan Linietsky, Ariel Manzur.                 */
-/* Copyright (c) 2014-2021 Godot Engine contributors (cf. AUTHORS.md).   */
+/* Copyright (c) 2007-2022 Juan Linietsky, Ariel Manzur.                 */
+/* Copyright (c) 2014-2022 Godot Engine contributors (cf. AUTHORS.md).   */
 /*                                                                       */
 /* Permission is hereby granted, free of charge, to any person obtaining */
 /* a copy of this software and associated documentation files (the       */
@@ -109,16 +109,18 @@ bool jni_exception_check(JNIEnv *p_env) {
 String app_native_lib_dir_cache;
 
 String determine_app_native_lib_dir() {
+	// The JNI code is the equivalent of:
+	//
+	// return godotActivity.getApplicationInfo().nativeLibraryDir;
+
 	JNIEnv *env = get_jni_env();
 
-	ScopedLocalRef<jclass> activityThreadClass(env, env->FindClass("android/app/ActivityThread"));
-	jmethodID currentActivityThread = env->GetStaticMethodID(activityThreadClass, "currentActivityThread", "()Landroid/app/ActivityThread;");
-	ScopedLocalRef<jobject> activityThread(env, env->CallStaticObjectMethod(activityThreadClass, currentActivityThread));
-	jmethodID getApplication = env->GetMethodID(activityThreadClass, "getApplication", "()Landroid/app/Application;");
-	ScopedLocalRef<jobject> ctx(env, env->CallObjectMethod(activityThread, getApplication));
+	GodotJavaWrapper *godot_java = static_cast<OS_Android *>(OS::get_singleton())->get_godot_java();
+	jobject activity = godot_java->get_activity();
 
-	jmethodID getApplicationInfo = env->GetMethodID(env->GetObjectClass(ctx), "getApplicationInfo", "()Landroid/content/pm/ApplicationInfo;");
-	ScopedLocalRef<jobject> applicationInfo(env, env->CallObjectMethod(ctx, getApplicationInfo));
+	ScopedLocalRef<jclass> contextClass(env, env->FindClass("android/content/Context"));
+	jmethodID getApplicationInfo = env->GetMethodID(contextClass, "getApplicationInfo", "()Landroid/content/pm/ApplicationInfo;");
+	ScopedLocalRef<jobject> applicationInfo(env, env->CallObjectMethod(activity, getApplicationInfo));
 	jfieldID nativeLibraryDirField = env->GetFieldID(env->GetObjectClass(applicationInfo), "nativeLibraryDir", "Ljava/lang/String;");
 	ScopedLocalRef<jstring> nativeLibraryDir(env, (jstring)env->GetObjectField(applicationInfo, nativeLibraryDirField));
 
@@ -162,11 +164,12 @@ const char *godot_so_name = "libgodot_android.so";
 void *mono_dl_handle = NULL;
 void *godot_dl_handle = NULL;
 
-void *try_dlopen(const String &p_so_path, int p_flags) {
+void *_try_dlopen_file_path(const String &p_so_path, int p_flags) {
 	if (!FileAccess::exists(p_so_path)) {
-		if (OS::get_singleton()->is_stdout_verbose())
+		if (OS::get_singleton()->is_stdout_verbose()) {
 			OS::get_singleton()->print("Cannot find shared library: '%s'\n", p_so_path.utf8().get_data());
-		return NULL;
+		}
+		return nullptr;
 	}
 
 	int lflags = gd_mono_convert_dl_flags(p_flags);
@@ -174,13 +177,48 @@ void *try_dlopen(const String &p_so_path, int p_flags) {
 	void *handle = dlopen(p_so_path.utf8().get_data(), lflags);
 
 	if (!handle) {
-		if (OS::get_singleton()->is_stdout_verbose())
+		if (OS::get_singleton()->is_stdout_verbose()) {
 			OS::get_singleton()->print("Failed to open shared library: '%s'. Error: '%s'\n", p_so_path.utf8().get_data(), dlerror());
-		return NULL;
+		}
+		return nullptr;
 	}
 
-	if (OS::get_singleton()->is_stdout_verbose())
+	if (OS::get_singleton()->is_stdout_verbose()) {
 		OS::get_singleton()->print("Successfully loaded shared library: '%s'\n", p_so_path.utf8().get_data());
+	}
+
+	return handle;
+}
+
+void *try_dlopen(const String &p_so_path, int p_flags) {
+	void *handle = _try_dlopen_file_path(p_so_path, p_flags);
+
+	if (handle) {
+		return handle;
+	}
+
+	// Try only with the file name, without specifying the location.
+	// This is needed when installing from Android App Bundles, as the native
+	// libraries are not extracted. They are loaded directly from the APK.
+	// See: https://stackoverflow.com/a/56551499
+	// If we pass only the file name to dlopen without the location, it should
+	// search the native libraries in all locations, including inside the apk.
+
+	String so_name = p_so_path.get_file();
+
+	int lflags = gd_mono_convert_dl_flags(p_flags);
+
+	handle = dlopen(so_name.utf8().get_data(), lflags);
+	if (!handle) {
+		if (OS::get_singleton()->is_stdout_verbose()) {
+			OS::get_singleton()->print("Failed to open shared library: '%s'. Error: '%s'\n", so_name.utf8().get_data(), dlerror());
+		}
+		return nullptr;
+	}
+
+	if (OS::get_singleton()->is_stdout_verbose()) {
+		OS::get_singleton()->print("Successfully loaded shared library: '%s'\n", so_name.utf8().get_data());
+	}
 
 	return handle;
 }
@@ -194,6 +232,7 @@ void *gd_mono_android_dlopen(const char *p_name, int p_flags, char **r_err, void
 			String so_path = path::join(app_native_lib_dir, mono_so_name);
 
 			mono_dl_handle = try_dlopen(so_path, p_flags);
+			ERR_FAIL_COND_V_MSG(!mono_dl_handle, nullptr, "Failed to load Mono native library from path");
 		}
 
 		return mono_dl_handle;
@@ -369,6 +408,7 @@ void initialize() {
 	String so_path = path::join(app_native_lib_dir, godot_so_name);
 
 	godot_dl_handle = try_dlopen(so_path, gd_mono_convert_dl_flags(MONO_DL_LAZY));
+	ERR_FAIL_COND_MSG(!godot_dl_handle, "Failed to load Godot native library");
 }
 
 void cleanup() {

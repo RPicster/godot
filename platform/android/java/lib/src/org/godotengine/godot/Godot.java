@@ -5,8 +5,8 @@
 /*                           GODOT ENGINE                                */
 /*                      https://godotengine.org                          */
 /*************************************************************************/
-/* Copyright (c) 2007-2021 Juan Linietsky, Ariel Manzur.                 */
-/* Copyright (c) 2014-2021 Godot Engine contributors (cf. AUTHORS.md).   */
+/* Copyright (c) 2007-2022 Juan Linietsky, Ariel Manzur.                 */
+/* Copyright (c) 2014-2022 Godot Engine contributors (cf. AUTHORS.md).   */
 /*                                                                       */
 /* Permission is hereby granted, free of charge, to any person obtaining */
 /* a copy of this software and associated documentation files (the       */
@@ -609,6 +609,8 @@ public class Godot extends Fragment implements SensorEventListener, IDownloaderC
 				xrMode = XRMode.REGULAR;
 			} else if (command_line[i].equals(XRMode.OVR.cmdLineArg)) {
 				xrMode = XRMode.OVR;
+			} else if (command_line[i].equals(XRMode.OPENXR.cmdLineArg)) {
+				xrMode = XRMode.OPENXR;
 			} else if (command_line[i].equals("--use_depth_32")) {
 				use_32_bits = true;
 			} else if (command_line[i].equals("--debug_opengl")) {

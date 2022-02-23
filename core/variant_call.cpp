@@ -5,8 +5,8 @@
 /*                           GODOT ENGINE                                */
 /*                      https://godotengine.org                          */
 /*************************************************************************/
-/* Copyright (c) 2007-2021 Juan Linietsky, Ariel Manzur.                 */
-/* Copyright (c) 2014-2021 Godot Engine contributors (cf. AUTHORS.md).   */
+/* Copyright (c) 2007-2022 Juan Linietsky, Ariel Manzur.                 */
+/* Copyright (c) 2014-2022 Godot Engine contributors (cf. AUTHORS.md).   */
 /*                                                                       */
 /* Permission is hereby granted, free of charge, to any person obtaining */
 /* a copy of this software and associated documentation files (the       */
@@ -271,6 +271,7 @@ struct _VariantCall {
 	VCALL_LOCALMEM0R(String, to_lower);
 	VCALL_LOCALMEM1R(String, left);
 	VCALL_LOCALMEM1R(String, right);
+	VCALL_LOCALMEM1R(String, indent);
 	VCALL_LOCALMEM0R(String, dedent);
 	VCALL_LOCALMEM2R(String, strip_edges);
 	VCALL_LOCALMEM0R(String, strip_escapes);
@@ -651,17 +652,17 @@ struct _VariantCall {
 
 	static void _call_PoolByteArray_decompress_dynamic(Variant &r_ret, Variant &p_self, const Variant **p_args) {
 		PoolByteArray *ba = reinterpret_cast<PoolByteArray *>(p_self._data._mem);
-		PoolByteArray *decompressed = memnew(PoolByteArray);
+		PoolByteArray decompressed;
 		int max_output_size = (int)(*p_args[0]);
 		Compression::Mode mode = (Compression::Mode)(int)(*p_args[1]);
 
-		decompressed->resize(1024);
-		int result = Compression::decompress_dynamic(decompressed, max_output_size, ba->read().ptr(), ba->size(), mode);
+		decompressed.resize(1024);
+		int result = Compression::decompress_dynamic(&decompressed, max_output_size, ba->read().ptr(), ba->size(), mode);
 
 		if (result == OK) {
 			r_ret = decompressed;
 		} else {
-			decompressed->resize(0);
+			decompressed.resize(0);
 			r_ret = decompressed;
 			ERR_FAIL_MSG("Decompression failed.");
 		}
@@ -1675,6 +1676,7 @@ void register_variant_methods() {
 	ADDFUNC0R(STRING, STRING, String, get_basename, varray());
 	ADDFUNC1R(STRING, STRING, String, plus_file, STRING, "file", varray());
 	ADDFUNC1R(STRING, INT, String, ord_at, INT, "at", varray());
+	ADDFUNC1R(STRING, STRING, String, indent, STRING, "prefix", varray());
 	ADDFUNC0R(STRING, STRING, String, dedent, varray());
 	ADDFUNC2(STRING, NIL, String, erase, INT, "position", INT, "chars", varray());
 	ADDFUNC0R(STRING, INT, String, hash, varray());

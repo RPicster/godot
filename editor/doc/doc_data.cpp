@@ -5,8 +5,8 @@
 /*                           GODOT ENGINE                                */
 /*                      https://godotengine.org                          */
 /*************************************************************************/
-/* Copyright (c) 2007-2021 Juan Linietsky, Ariel Manzur.                 */
-/* Copyright (c) 2014-2021 Godot Engine contributors (cf. AUTHORS.md).   */
+/* Copyright (c) 2007-2022 Juan Linietsky, Ariel Manzur.                 */
+/* Copyright (c) 2014-2022 Godot Engine contributors (cf. AUTHORS.md).   */
 /*                                                                       */
 /* Permission is hereby granted, free of charge, to any person obtaining */
 /* a copy of this software and associated documentation files (the       */
@@ -37,8 +37,38 @@
 #include "core/os/dir_access.h"
 #include "core/project_settings.h"
 #include "core/script_language.h"
+#include "core/translation.h"
 #include "core/version.h"
 #include "scene/resources/theme.h"
+
+static String _get_indent(const String &p_text) {
+	String indent;
+	bool has_text = false;
+	int line_start = 0;
+
+	for (int i = 0; i < p_text.length(); i++) {
+		const char32_t c = p_text[i];
+		if (c == '\n') {
+			line_start = i + 1;
+		} else if (c > 32) {
+			has_text = true;
+			indent = p_text.substr(line_start, i - line_start);
+			break; // Indentation of the first line that has text.
+		}
+	}
+	if (!has_text) {
+		return p_text;
+	}
+	return indent;
+}
+
+static String _translate_doc_string(const String &p_text) {
+	const String indent = _get_indent(p_text);
+	const String message = p_text.dedent().strip_edges();
+	const String translated = TranslationServer::get_singleton()->doc_translate(message);
+	// No need to restore stripped edges because they'll be stripped again later.
+	return translated.indent(indent);
+}
 
 void DocData::merge_from(const DocData &p_data) {
 	for (Map<String, ClassDoc>::Element *E = class_list.front(); E; E = E->next()) {
@@ -511,6 +541,8 @@ void DocData::generate(bool p_basic_types) {
 				tid.data_type = "style";
 				c.theme_properties.push_back(tid);
 			}
+
+			c.theme_properties.sort();
 		}
 
 		classes.pop_front();
@@ -1049,11 +1081,11 @@ Error DocData::save_classes(const String &p_default_path, const Map<String, Stri
 		_write_string(f, 0, header);
 
 		_write_string(f, 1, "<brief_description>");
-		_write_string(f, 2, c.brief_description.strip_edges().xml_escape());
+		_write_string(f, 2, _translate_doc_string(c.brief_description).strip_edges().xml_escape());
 		_write_string(f, 1, "</brief_description>");
 
 		_write_string(f, 1, "<description>");
-		_write_string(f, 2, c.description.strip_edges().xml_escape());
+		_write_string(f, 2, _translate_doc_string(c.description).strip_edges().xml_escape());
 		_write_string(f, 1, "</description>");
 
 		_write_string(f, 1, "<tutorials>");
@@ -1102,7 +1134,7 @@ Error DocData::save_classes(const String &p_default_path, const Map<String, Stri
 			}
 
 			_write_string(f, 3, "<description>");
-			_write_string(f, 4, m.description.strip_edges().xml_escape());
+			_write_string(f, 4, _translate_doc_string(m.description).strip_edges().xml_escape());
 			_write_string(f, 3, "</description>");
 
 			_write_string(f, 2, "</method>");
@@ -1130,7 +1162,7 @@ Error DocData::save_classes(const String &p_default_path, const Map<String, Stri
 					_write_string(f, 2, "<member name=\"" + p.name + "\" type=\"" + p.type + "\" setter=\"" + p.setter + "\" getter=\"" + p.getter + "\" override=\"true\"" + additional_attributes + " />");
 				} else {
 					_write_string(f, 2, "<member name=\"" + p.name + "\" type=\"" + p.type + "\" setter=\"" + p.setter + "\" getter=\"" + p.getter + "\"" + additional_attributes + ">");
-					_write_string(f, 3, p.description.strip_edges().xml_escape());
+					_write_string(f, 3, _translate_doc_string(p.description).strip_edges().xml_escape());
 					_write_string(f, 2, "</member>");
 				}
 			}
@@ -1150,7 +1182,7 @@ Error DocData::save_classes(const String &p_default_path, const Map<String, Stri
 				}
 
 				_write_string(f, 3, "<description>");
-				_write_string(f, 4, m.description.strip_edges().xml_escape());
+				_write_string(f, 4, _translate_doc_string(m.description).strip_edges().xml_escape());
 				_write_string(f, 3, "</description>");
 
 				_write_string(f, 2, "</signal>");
@@ -1176,7 +1208,7 @@ Error DocData::save_classes(const String &p_default_path, const Map<String, Stri
 					_write_string(f, 2, "<constant name=\"" + k.name + "\" value=\"platform-dependent\">");
 				}
 			}
-			_write_string(f, 3, k.description.strip_edges().xml_escape());
+			_write_string(f, 3, _translate_doc_string(k.description).strip_edges().xml_escape());
 			_write_string(f, 2, "</constant>");
 		}
 
@@ -1195,7 +1227,7 @@ Error DocData::save_classes(const String &p_default_path, const Map<String, Stri
 					_write_string(f, 2, "<theme_item name=\"" + ti.name + "\" data_type=\"" + ti.data_type + "\" type=\"" + ti.type + "\">");
 				}
 
-				_write_string(f, 3, ti.description.strip_edges().xml_escape());
+				_write_string(f, 3, _translate_doc_string(ti.description).strip_edges().xml_escape());
 
 				_write_string(f, 2, "</theme_item>");
 			}
@@ -1211,7 +1243,8 @@ Error DocData::save_classes(const String &p_default_path, const Map<String, Stri
 Error DocData::load_compressed(const uint8_t *p_data, int p_compressed_size, int p_uncompressed_size) {
 	Vector<uint8_t> data;
 	data.resize(p_uncompressed_size);
-	Compression::decompress(data.ptrw(), p_uncompressed_size, p_data, p_compressed_size, Compression::MODE_DEFLATE);
+	int ret = Compression::decompress(data.ptrw(), p_uncompressed_size, p_data, p_compressed_size, Compression::MODE_DEFLATE);
+	ERR_FAIL_COND_V_MSG(ret == -1, ERR_FILE_CORRUPT, "Compressed file is corrupt.");
 	class_list.clear();
 
 	Ref<XMLParser> parser = memnew(XMLParser);

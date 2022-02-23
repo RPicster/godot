@@ -5,8 +5,8 @@
 /*                           GODOT ENGINE                                */
 /*                      https://godotengine.org                          */
 /*************************************************************************/
-/* Copyright (c) 2007-2021 Juan Linietsky, Ariel Manzur.                 */
-/* Copyright (c) 2014-2021 Godot Engine contributors (cf. AUTHORS.md).   */
+/* Copyright (c) 2007-2022 Juan Linietsky, Ariel Manzur.                 */
+/* Copyright (c) 2014-2022 Godot Engine contributors (cf. AUTHORS.md).   */
 /*                                                                       */
 /* Permission is hereby granted, free of charge, to any person obtaining */
 /* a copy of this software and associated documentation files (the       */
@@ -215,6 +215,7 @@ private:
 	void _select_previous_tile();
 	Array _get_tiles_in_current_texture(bool sorted = false);
 	bool _sort_tiles(Variant p_a, Variant p_b);
+	Vector2 _get_subtiles_count(int p_tile_id);
 	void _select_next_subtile();
 	void _select_previous_subtile();
 	void _select_next_shape();

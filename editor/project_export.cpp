@@ -5,8 +5,8 @@
 /*                           GODOT ENGINE                                */
 /*                      https://godotengine.org                          */
 /*************************************************************************/
-/* Copyright (c) 2007-2021 Juan Linietsky, Ariel Manzur.                 */
-/* Copyright (c) 2014-2021 Godot Engine contributors (cf. AUTHORS.md).   */
+/* Copyright (c) 2007-2022 Juan Linietsky, Ariel Manzur.                 */
+/* Copyright (c) 2014-2022 Godot Engine contributors (cf. AUTHORS.md).   */
 /*                                                                       */
 /* Permission is hereby granted, free of charge, to any person obtaining */
 /* a copy of this software and associated documentation files (the       */
@@ -1174,11 +1174,13 @@ ProjectExportDialog::ProjectExportDialog() {
 	export_debug = memnew(CheckBox);
 	export_debug->set_text(TTR("Export With Debug"));
 	export_debug->set_pressed(true);
+	export_debug->set_h_size_flags(Control::SIZE_SHRINK_CENTER);
 	export_project->get_vbox()->add_child(export_debug);
 
 	export_pck_zip_debug = memnew(CheckBox);
 	export_pck_zip_debug->set_text(TTR("Export With Debug"));
 	export_pck_zip_debug->set_pressed(true);
+	export_pck_zip_debug->set_h_size_flags(Control::SIZE_SHRINK_CENTER);
 	export_pck_zip->get_vbox()->add_child(export_pck_zip_debug);
 
 	set_hide_on_ok(false);

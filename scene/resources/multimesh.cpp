@@ -5,8 +5,8 @@
 /*                           GODOT ENGINE                                */
 /*                      https://godotengine.org                          */
 /*************************************************************************/
-/* Copyright (c) 2007-2021 Juan Linietsky, Ariel Manzur.                 */
-/* Copyright (c) 2014-2021 Godot Engine contributors (cf. AUTHORS.md).   */
+/* Copyright (c) 2007-2022 Juan Linietsky, Ariel Manzur.                 */
+/* Copyright (c) 2014-2022 Godot Engine contributors (cf. AUTHORS.md).   */
 /*                                                                       */
 /* Permission is hereby granted, free of charge, to any person obtaining */
 /* a copy of this software and associated documentation files (the       */
@@ -29,6 +29,7 @@
 /*************************************************************************/
 
 #include "multimesh.h"
+
 #include "servers/visual_server.h"
 
 void MultiMesh::_set_transform_array(const PoolVector<Vector3> &p_array) {
@@ -225,6 +226,7 @@ void MultiMesh::set_instance_transform(int p_instance, const Transform &p_transf
 
 void MultiMesh::set_instance_transform_2d(int p_instance, const Transform2D &p_transform) {
 	VisualServer::get_singleton()->multimesh_instance_set_transform_2d(multimesh, p_instance, p_transform);
+	emit_changed();
 }
 
 Transform MultiMesh::get_instance_transform(int p_instance) const {

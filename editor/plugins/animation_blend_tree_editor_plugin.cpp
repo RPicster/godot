@@ -5,8 +5,8 @@
 /*                           GODOT ENGINE                                */
 /*                      https://godotengine.org                          */
 /*************************************************************************/
-/* Copyright (c) 2007-2021 Juan Linietsky, Ariel Manzur.                 */
-/* Copyright (c) 2014-2021 Godot Engine contributors (cf. AUTHORS.md).   */
+/* Copyright (c) 2007-2022 Juan Linietsky, Ariel Manzur.                 */
+/* Copyright (c) 2014-2022 Godot Engine contributors (cf. AUTHORS.md).   */
 /*                                                                       */
 /* Permission is hereby granted, free of charge, to any person obtaining */
 /* a copy of this software and associated documentation files (the       */
@@ -103,7 +103,7 @@ void AnimationNodeBlendTreeEditor::_property_changed(const StringName &p_propert
 }
 
 void AnimationNodeBlendTreeEditor::_update_graph() {
-	if (updating) {
+	if (updating || blend_tree.is_null()) {
 		return;
 	}
 
@@ -915,6 +915,9 @@ void AnimationNodeBlendTreeEditor::_node_renamed(const String &p_text, Ref<Anima
 }
 
 void AnimationNodeBlendTreeEditor::_node_renamed_focus_out(Node *le, Ref<AnimationNode> p_node) {
+	if (le == nullptr) {
+		return; // The text_submitted signal triggered the graph update and freed the LineEdit.
+	}
 	_node_renamed(le->call("get_text"), p_node);
 }
 
@@ -969,7 +972,7 @@ AnimationNodeBlendTreeEditor::AnimationNodeBlendTreeEditor() {
 	add_node->set_text(TTR("Add Node..."));
 	graph->get_zoom_hbox()->move_child(add_node, 0);
 	add_node->get_popup()->connect("id_pressed", this, "_add_node");
-	add_node->connect("about_to_show", this, "_update_options_menu");
+	add_node->connect("about_to_show", this, "_update_options_menu", varray(false));
 
 	add_options.push_back(AddOption("Animation", "AnimationNodeAnimation"));
 	add_options.push_back(AddOption("OneShot", "AnimationNodeOneShot", 2));

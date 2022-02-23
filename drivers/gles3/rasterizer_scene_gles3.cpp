@@ -5,8 +5,8 @@
 /*                           GODOT ENGINE                                */
 /*                      https://godotengine.org                          */
 /*************************************************************************/
-/* Copyright (c) 2007-2021 Juan Linietsky, Ariel Manzur.                 */
-/* Copyright (c) 2014-2021 Godot Engine contributors (cf. AUTHORS.md).   */
+/* Copyright (c) 2007-2022 Juan Linietsky, Ariel Manzur.                 */
+/* Copyright (c) 2014-2022 Godot Engine contributors (cf. AUTHORS.md).   */
 /*                                                                       */
 /* Permission is hereby granted, free of charge, to any person obtaining */
 /* a copy of this software and associated documentation files (the       */
@@ -1268,6 +1268,8 @@ void RasterizerSceneGLES3::_setup_geometry(RenderList::Element *e, const Transfo
 			if (s->blend_shapes.size() && e->instance->blend_values.size()) {
 				//blend shapes, use transform feedback
 				storage->mesh_render_blend_shapes(s, e->instance->blend_values.read().ptr());
+				//disable octahedral compression as the result of blend shapes is always uncompressed cartesian coordinates
+				state.scene_shader.set_conditional(SceneShaderGLES3::ENABLE_OCTAHEDRAL_COMPRESSION, false);
 				//rebind shader
 				state.scene_shader.bind();
 #ifdef DEBUG_ENABLED
@@ -5256,18 +5258,28 @@ RasterizerSceneGLES3::RasterizerSceneGLES3() {
 }
 
 RasterizerSceneGLES3::~RasterizerSceneGLES3() {
-	memdelete(default_material.get_data());
-	memdelete(default_material_twosided.get_data());
-	memdelete(default_shader.get_data());
-	memdelete(default_shader_twosided.get_data());
+	storage->free(default_material);
+	default_material = RID();
+	storage->free(default_material_twosided);
+	default_material_twosided = RID();
+	storage->free(default_shader);
+	default_shader = RID();
+	storage->free(default_shader_twosided);
+	default_shader_twosided = RID();
 
-	memdelete(default_worldcoord_material.get_data());
-	memdelete(default_worldcoord_material_twosided.get_data());
-	memdelete(default_worldcoord_shader.get_data());
-	memdelete(default_worldcoord_shader_twosided.get_data());
+	storage->free(default_worldcoord_material);
+	default_worldcoord_material = RID();
+	storage->free(default_worldcoord_material_twosided);
+	default_worldcoord_material_twosided = RID();
+	storage->free(default_worldcoord_shader);
+	default_worldcoord_shader = RID();
+	storage->free(default_worldcoord_shader_twosided);
+	default_worldcoord_shader_twosided = RID();
 
-	memdelete(default_overdraw_material.get_data());
-	memdelete(default_overdraw_shader.get_data());
+	storage->free(default_overdraw_material);
+	default_overdraw_material = RID();
+	storage->free(default_overdraw_shader);
+	default_overdraw_shader = RID();
 
 	memfree(state.spot_array_tmp);
 	memfree(state.omni_array_tmp);

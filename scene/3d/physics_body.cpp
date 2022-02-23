@@ -5,8 +5,8 @@
 /*                           GODOT ENGINE                                */
 /*                      https://godotengine.org                          */
 /*************************************************************************/
-/* Copyright (c) 2007-2021 Juan Linietsky, Ariel Manzur.                 */
-/* Copyright (c) 2014-2021 Godot Engine contributors (cf. AUTHORS.md).   */
+/* Copyright (c) 2007-2022 Juan Linietsky, Ariel Manzur.                 */
+/* Copyright (c) 2014-2022 Godot Engine contributors (cf. AUTHORS.md).   */
 /*                                                                       */
 /* Permission is hereby granted, free of charge, to any person obtaining */
 /* a copy of this software and associated documentation files (the       */
@@ -1074,6 +1074,10 @@ Vector3 KinematicBody::_move_and_slide_internal(const Vector3 &p_linear_velocity
 			Transform gt = get_global_transform();
 			Vector3 local_position = gt.origin - bs->get_transform().origin;
 			current_floor_velocity = bs->get_velocity_at_local_position(local_position);
+		} else {
+			// Body is removed or destroyed, invalidate floor.
+			current_floor_velocity = Vector3();
+			on_floor_body = RID();
 		}
 	}
 
@@ -1255,7 +1259,15 @@ Vector3 KinematicBody::get_floor_velocity() const {
 bool KinematicBody::test_move(const Transform &p_from, const Vector3 &p_motion, bool p_infinite_inertia) {
 	ERR_FAIL_COND_V(!is_inside_tree(), false);
 
-	return PhysicsServer::get_singleton()->body_test_motion(get_rid(), p_from, p_motion, p_infinite_inertia);
+	PhysicsServer::MotionResult result;
+	bool colliding = PhysicsServer::get_singleton()->body_test_motion(get_rid(), p_from, p_motion, p_infinite_inertia, &result);
+
+	if (colliding) {
+		// Don't report collision when the whole motion is done.
+		return (result.collision_safe_fraction < 1.0);
+	} else {
+		return false;
+	}
 }
 
 bool KinematicBody::separate_raycast_shapes(bool p_infinite_inertia, Collision &r_collision) {

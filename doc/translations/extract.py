@@ -8,8 +8,8 @@ from collections import OrderedDict
 EXTRACT_TAGS = ["description", "brief_description", "member", "constant", "theme_item", "link"]
 HEADER = """\
 # LANGUAGE translation of the Godot Engine class reference.
-# Copyright (c) 2007-2021 Juan Linietsky, Ariel Manzur.
-# Copyright (c) 2014-2021 Godot Engine contributors (cf. AUTHORS.md).
+# Copyright (c) 2007-2022 Juan Linietsky, Ariel Manzur.
+# Copyright (c) 2014-2022 Godot Engine contributors (cf. AUTHORS.md).
 # This file is distributed under the same license as the Godot source code.
 #
 # FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
@@ -221,7 +221,7 @@ def _make_translation_catalog(classes):
 
 
 ## generate the catalog file
-def _generate_translation_catalog_file(unique_msgs, output):
+def _generate_translation_catalog_file(unique_msgs, output, location_line=False):
     with open(output, "w", encoding="utf8") as f:
         f.write(HEADER)
         for msg in BASE_STRINGS:
@@ -238,7 +238,10 @@ def _generate_translation_catalog_file(unique_msgs, output):
                 path = desc.desc_list.path.replace("\\", "/")
                 if path.startswith("./"):
                     path = path[2:]
-                f.write(" {}:{}".format(path, desc.line_no))
+                if location_line:  # Can be skipped as diffs on line numbers are spammy.
+                    f.write(" {}:{}".format(path, desc.line_no))
+                else:
+                    f.write(" {}".format(path))
             f.write("\n")
 
             f.write('msgid "{}"\n'.format(msg))

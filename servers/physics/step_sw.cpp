@@ -5,8 +5,8 @@
 /*                           GODOT ENGINE                                */
 /*                      https://godotengine.org                          */
 /*************************************************************************/
-/* Copyright (c) 2007-2021 Juan Linietsky, Ariel Manzur.                 */
-/* Copyright (c) 2014-2021 Godot Engine contributors (cf. AUTHORS.md).   */
+/* Copyright (c) 2007-2022 Juan Linietsky, Ariel Manzur.                 */
+/* Copyright (c) 2014-2022 Godot Engine contributors (cf. AUTHORS.md).   */
 /*                                                                       */
 /* Permission is hereby granted, free of charge, to any person obtaining */
 /* a copy of this software and associated documentation files (the       */
@@ -162,6 +162,9 @@ void StepSW::step(SpaceSW *p_space, real_t p_delta, int p_iterations) {
 
 	p_space->set_active_objects(active_count);
 
+	// Update the broadphase to register collision pairs.
+	p_space->update();
+
 	{ //profile
 		profile_endtime = OS::get_singleton()->get_ticks_usec();
 		p_space->set_elapsed_time(SpaceSW::ELAPSED_TIME_INTEGRATE_FORCES, profile_endtime - profile_begtime);
@@ -278,7 +281,6 @@ void StepSW::step(SpaceSW *p_space, real_t p_delta, int p_iterations) {
 		profile_begtime = profile_endtime;
 	}
 
-	p_space->update();
 	p_space->unlock();
 	_step++;
 }

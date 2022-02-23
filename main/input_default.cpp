@@ -5,8 +5,8 @@
 /*                           GODOT ENGINE                                */
 /*                      https://godotengine.org                          */
 /*************************************************************************/
-/* Copyright (c) 2007-2021 Juan Linietsky, Ariel Manzur.                 */
-/* Copyright (c) 2014-2021 Godot Engine contributors (cf. AUTHORS.md).   */
+/* Copyright (c) 2007-2022 Juan Linietsky, Ariel Manzur.                 */
+/* Copyright (c) 2014-2022 Godot Engine contributors (cf. AUTHORS.md).   */
 /*                                                                       */
 /* Permission is hereby granted, free of charge, to any person obtaining */
 /* a copy of this software and associated documentation files (the       */
@@ -74,6 +74,11 @@ InputDefault::SpeedTrack::SpeedTrack() {
 bool InputDefault::is_key_pressed(int p_scancode) const {
 	_THREAD_SAFE_METHOD_
 	return keys_pressed.has(p_scancode);
+}
+
+bool InputDefault::is_physical_key_pressed(int p_scancode) const {
+	_THREAD_SAFE_METHOD_
+	return physical_keys_pressed.has(p_scancode);
 }
 
 bool InputDefault::is_mouse_button_pressed(int p_button) const {
@@ -314,6 +319,13 @@ void InputDefault::_parse_input_event_impl(const Ref<InputEvent> &p_event, bool 
 			keys_pressed.insert(k->get_scancode());
 		} else {
 			keys_pressed.erase(k->get_scancode());
+		}
+	}
+	if (k.is_valid() && !k->is_echo() && k->get_physical_scancode() != 0) {
+		if (k->is_pressed()) {
+			physical_keys_pressed.insert(k->get_physical_scancode());
+		} else {
+			physical_keys_pressed.erase(k->get_physical_scancode());
 		}
 	}
 
@@ -716,6 +728,7 @@ void InputDefault::release_pressed_events() {
 	flush_buffered_events(); // this is needed to release actions strengths
 
 	keys_pressed.clear();
+	physical_keys_pressed.clear();
 	joy_buttons_pressed.clear();
 	_joy_axis.clear();
 
@@ -762,7 +775,8 @@ InputDefault::InputDefault() {
 void InputDefault::joy_button(int p_device, int p_button, bool p_pressed) {
 	_THREAD_SAFE_METHOD_;
 	Joypad &joy = joy_names[p_device];
-	//printf("got button %i, mapping is %i\n", p_button, joy.mapping);
+	ERR_FAIL_INDEX(p_button, JOY_BUTTON_MAX);
+
 	if (joy.last_buttons[p_button] == p_pressed) {
 		return;
 	}

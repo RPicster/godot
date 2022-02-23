@@ -5,8 +5,8 @@
 /*                           GODOT ENGINE                                */
 /*                      https://godotengine.org                          */
 /*************************************************************************/
-/* Copyright (c) 2007-2021 Juan Linietsky, Ariel Manzur.                 */
-/* Copyright (c) 2014-2021 Godot Engine contributors (cf. AUTHORS.md).   */
+/* Copyright (c) 2007-2022 Juan Linietsky, Ariel Manzur.                 */
+/* Copyright (c) 2014-2022 Godot Engine contributors (cf. AUTHORS.md).   */
 /*                                                                       */
 /* Permission is hereby granted, free of charge, to any person obtaining */
 /* a copy of this software and associated documentation files (the       */
@@ -131,7 +131,7 @@ static void _plot_triangle(Vector2 *vertices, const Vector2 &p_offset, bool p_tr
 	int max_y = MIN(y[2], height - p_offset.y - 1);
 	for (int yi = y[0]; yi < max_y; yi++) {
 		if (yi >= 0) {
-			for (int xi = (xf > 0 ? int(xf) : 0); xi < (xt < width ? xt : width - 1); xi++) {
+			for (int xi = (xf > 0 ? int(xf) : 0); xi < (xt <= src_width ? xt : src_width); xi++) {
 				int px = xi, py = yi;
 				int sx = px, sy = py;
 				sx = CLAMP(sx, 0, src_width - 1);
@@ -153,7 +153,7 @@ static void _plot_triangle(Vector2 *vertices, const Vector2 &p_offset, bool p_tr
 				p_image->set_pixel(px, py, color);
 			}
 
-			for (int xi = (xf < width ? int(xf) : width - 1); xi >= (xt > 0 ? xt : 0); xi--) {
+			for (int xi = (xf < src_width ? int(xf) : src_width - 1); xi >= (xt > 0 ? xt : 0); xi--) {
 				int px = xi, py = yi;
 				int sx = px, sy = py;
 				sx = CLAMP(sx, 0, src_width - 1);

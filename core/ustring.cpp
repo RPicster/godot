@@ -5,8 +5,8 @@
 /*                           GODOT ENGINE                                */
 /*                      https://godotengine.org                          */
 /*************************************************************************/
-/* Copyright (c) 2007-2021 Juan Linietsky, Ariel Manzur.                 */
-/* Copyright (c) 2014-2021 Godot Engine contributors (cf. AUTHORS.md).   */
+/* Copyright (c) 2007-2022 Juan Linietsky, Ariel Manzur.                 */
+/* Copyright (c) 2014-2022 Godot Engine contributors (cf. AUTHORS.md).   */
 /*                                                                       */
 /* Permission is hereby granted, free of charge, to any person obtaining */
 /* a copy of this software and associated documentation files (the       */
@@ -3111,6 +3111,27 @@ String String::right(int p_pos) const {
 CharType String::ord_at(int p_idx) const {
 	ERR_FAIL_INDEX_V(p_idx, length(), 0);
 	return operator[](p_idx);
+}
+
+String String::indent(const String &p_prefix) const {
+	String new_string;
+	int line_start = 0;
+
+	for (int i = 0; i < length(); i++) {
+		const char32_t c = operator[](i);
+		if (c == '\n') {
+			if (i == line_start) {
+				new_string += c; // Leave empty lines empty.
+			} else {
+				new_string += p_prefix + substr(line_start, i - line_start + 1);
+			}
+			line_start = i + 1;
+		}
+	}
+	if (line_start != length()) {
+		new_string += p_prefix + substr(line_start);
+	}
+	return new_string;
 }
 
 String String::dedent() const {

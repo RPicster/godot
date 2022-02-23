@@ -5,8 +5,8 @@
 /*                           GODOT ENGINE                                */
 /*                      https://godotengine.org                          */
 /*************************************************************************/
-/* Copyright (c) 2007-2021 Juan Linietsky, Ariel Manzur.                 */
-/* Copyright (c) 2014-2021 Godot Engine contributors (cf. AUTHORS.md).   */
+/* Copyright (c) 2007-2022 Juan Linietsky, Ariel Manzur.                 */
+/* Copyright (c) 2014-2022 Godot Engine contributors (cf. AUTHORS.md).   */
 /*                                                                       */
 /* Permission is hereby granted, free of charge, to any person obtaining */
 /* a copy of this software and associated documentation files (the       */
@@ -154,6 +154,10 @@ void WebRTCMultiplayer::_find_next_peer() {
 	}
 	// After last.
 	while (E) {
+		if (!E->get()->connected) {
+			E = E->next();
+			continue;
+		}
 		for (List<Ref<WebRTCDataChannel>>::Element *F = E->get()->channels.front(); F; F = F->next()) {
 			if (F->get()->get_available_packet_count()) {
 				next_packet_peer = E->key();
@@ -165,6 +169,10 @@ void WebRTCMultiplayer::_find_next_peer() {
 	E = peer_map.front();
 	// Before last
 	while (E) {
+		if (!E->get()->connected) {
+			E = E->next();
+			continue;
+		}
 		for (List<Ref<WebRTCDataChannel>>::Element *F = E->get()->channels.front(); F; F = F->next()) {
 			if (F->get()->get_available_packet_count()) {
 				next_packet_peer = E->key();
@@ -357,6 +365,9 @@ int WebRTCMultiplayer::get_available_packet_count() const {
 	}
 	int size = 0;
 	for (Map<int, Ref<ConnectedPeer>>::Element *E = peer_map.front(); E; E = E->next()) {
+		if (!E->get()->connected) {
+			continue;
+		}
 		for (List<Ref<WebRTCDataChannel>>::Element *F = E->get()->channels.front(); F; F = F->next()) {
 			size += F->get()->get_available_packet_count();
 		}

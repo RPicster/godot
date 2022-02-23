@@ -5,6 +5,7 @@
 	</brief_description>
 	<description>
 		Baked lightmaps are an alternative workflow for adding indirect (or baked) lighting to a scene. Unlike the [GIProbe] approach, baked lightmaps work fine on low-end PCs and mobile devices as they consume almost no resources in run-time.
+		[b]Procedural generation:[/b] Lightmap baking functionality is only available in the editor. This means [BakedLightmap] is not suited to procedurally generated or user-built levels. For procedurally generated or user-built levels, use [GIProbe] instead.
 		[b]Note:[/b] Due to how lightmaps work, most properties only have a visible effect once lightmaps are baked again.
 	</description>
 	<tutorials>
@@ -44,7 +45,7 @@
 			When enabled, an octree containing the scene's lighting information will be computed. This octree will then be used to light dynamic objects in the scene.
 		</member>
 		<member name="capture_propagation" type="float" setter="set_capture_propagation" getter="get_capture_propagation" default="1.0">
-			Bias value to reduce the amount of light proagation in the captured octree.
+			Bias value to reduce the amount of light propagation in the captured octree.
 		</member>
 		<member name="capture_quality" type="int" setter="set_capture_quality" getter="get_capture_quality" enum="BakedLightmap.BakeQuality" default="1">
 			Bake quality of the capture data.

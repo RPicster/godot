@@ -5,8 +5,8 @@
 /*                           GODOT ENGINE                                */
 /*                      https://godotengine.org                          */
 /*************************************************************************/
-/* Copyright (c) 2007-2021 Juan Linietsky, Ariel Manzur.                 */
-/* Copyright (c) 2014-2021 Godot Engine contributors (cf. AUTHORS.md).   */
+/* Copyright (c) 2007-2022 Juan Linietsky, Ariel Manzur.                 */
+/* Copyright (c) 2014-2022 Godot Engine contributors (cf. AUTHORS.md).   */
 /*                                                                       */
 /* Permission is hereby granted, free of charge, to any person obtaining */
 /* a copy of this software and associated documentation files (the       */
@@ -35,6 +35,8 @@
 #include "scene/resources/packed_scene.h"
 
 #include "editor/editor_scale.h"
+
+constexpr double REFRESH_TIMER = 1.5;
 
 void ThemeEditorPreview::set_preview_theme(const Ref<Theme> &p_theme) {
 	preview_content->set_theme(p_theme);
@@ -66,11 +68,14 @@ void ThemeEditorPreview::_refresh_interval() {
 }
 
 void ThemeEditorPreview::_preview_visibility_changed() {
-	set_process(is_visible());
+	set_process(is_visible_in_tree());
 }
 
 void ThemeEditorPreview::_picker_button_cbk() {
 	picker_overlay->set_visible(picker_button->is_pressed());
+	if (picker_button->is_pressed()) {
+		_reset_picker_overlay();
+	}
 }
 
 Control *ThemeEditorPreview::_find_hovered_control(Control *p_parent, Vector2 p_mouse_position) {
@@ -147,6 +152,7 @@ void ThemeEditorPreview::_gui_input_picker_overlay(const Ref<InputEvent> &p_even
 			emit_signal("control_picked", theme_type);
 			picker_button->set_pressed(false);
 			picker_overlay->set_visible(false);
+			return;
 		}
 	}
 
@@ -157,6 +163,9 @@ void ThemeEditorPreview::_gui_input_picker_overlay(const Ref<InputEvent> &p_even
 		hovered_control = _find_hovered_control(preview_content, mp);
 		picker_overlay->update();
 	}
+
+	// Forward input to the scroll container underneath to allow scrolling.
+	preview_container->call("_gui_input", p_event);
 }
 
 void ThemeEditorPreview::_reset_picker_overlay() {
@@ -185,7 +194,7 @@ void ThemeEditorPreview::_notification(int p_what) {
 		case NOTIFICATION_PROCESS: {
 			time_left -= get_process_delta_time();
 			if (time_left < 0) {
-				time_left = 1.5;
+				time_left = REFRESH_TIMER;
 				_refresh_interval();
 			}
 		} break;
@@ -220,7 +229,7 @@ ThemeEditorPreview::ThemeEditorPreview() {
 	preview_body->set_v_size_flags(SIZE_EXPAND_FILL);
 	add_child(preview_body);
 
-	ScrollContainer *preview_container = memnew(ScrollContainer);
+	preview_container = memnew(ScrollContainer);
 	preview_container->set_enable_v_scroll(true);
 	preview_container->set_enable_h_scroll(true);
 	preview_body->add_child(preview_container);

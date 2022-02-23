@@ -5,8 +5,8 @@
 /*                           GODOT ENGINE                                */
 /*                      https://godotengine.org                          */
 /*************************************************************************/
-/* Copyright (c) 2007-2021 Juan Linietsky, Ariel Manzur.                 */
-/* Copyright (c) 2014-2021 Godot Engine contributors (cf. AUTHORS.md).   */
+/* Copyright (c) 2007-2022 Juan Linietsky, Ariel Manzur.                 */
+/* Copyright (c) 2014-2022 Godot Engine contributors (cf. AUTHORS.md).   */
 /*                                                                       */
 /* Permission is hereby granted, free of charge, to any person obtaining */
 /* a copy of this software and associated documentation files (the       */
@@ -29,6 +29,7 @@
 /*************************************************************************/
 
 #include "multimesh_instance_2d.h"
+#include "core/core_string_names.h"
 
 void MultiMeshInstance2D::_notification(int p_what) {
 	if (p_what == NOTIFICATION_DRAW) {
@@ -56,7 +57,16 @@ void MultiMeshInstance2D::_bind_methods() {
 }
 
 void MultiMeshInstance2D::set_multimesh(const Ref<MultiMesh> &p_multimesh) {
+	// Cleanup previous connection if any.
+	if (multimesh.is_valid()) {
+		multimesh->disconnect(CoreStringNames::get_singleton()->changed, this, "update");
+	}
 	multimesh = p_multimesh;
+
+	// Connect to the multimesh so the AABB can update when instance transforms are changed.
+	if (multimesh.is_valid()) {
+		multimesh->connect(CoreStringNames::get_singleton()->changed, this, "update");
+	}
 	update();
 }
 

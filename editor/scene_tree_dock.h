@@ -5,8 +5,8 @@
 /*                           GODOT ENGINE                                */
 /*                      https://godotengine.org                          */
 /*************************************************************************/
-/* Copyright (c) 2007-2021 Juan Linietsky, Ariel Manzur.                 */
-/* Copyright (c) 2014-2021 Godot Engine contributors (cf. AUTHORS.md).   */
+/* Copyright (c) 2007-2022 Juan Linietsky, Ariel Manzur.                 */
+/* Copyright (c) 2014-2022 Godot Engine contributors (cf. AUTHORS.md).   */
 /*                                                                       */
 /* Permission is hereby granted, free of charge, to any person obtaining */
 /* a copy of this software and associated documentation files (the       */
@@ -50,13 +50,14 @@
 #include "scene/gui/tree.h"
 #include "scene_tree_editor.h"
 
+#include "modules/modules_enabled.gen.h" // For regex.
+
 class EditorNode;
 
 class SceneTreeDock : public VBoxContainer {
 	GDCLASS(SceneTreeDock, VBoxContainer);
 
 	enum Tool {
-
 		TOOL_NEW,
 		TOOL_INSTANCE,
 		TOOL_EXPAND_COLLAPSE,
@@ -96,7 +97,6 @@ class SceneTreeDock : public VBoxContainer {
 		TOOL_CREATE_3D_SCENE,
 		TOOL_CREATE_USER_INTERFACE,
 		TOOL_CREATE_FAVORITE,
-
 	};
 
 	enum {

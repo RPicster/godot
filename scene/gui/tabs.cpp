@@ -5,8 +5,8 @@
 /*                           GODOT ENGINE                                */
 /*                      https://godotengine.org                          */
 /*************************************************************************/
-/* Copyright (c) 2007-2021 Juan Linietsky, Ariel Manzur.                 */
-/* Copyright (c) 2014-2021 Godot Engine contributors (cf. AUTHORS.md).   */
+/* Copyright (c) 2007-2022 Juan Linietsky, Ariel Manzur.                 */
+/* Copyright (c) 2014-2022 Godot Engine contributors (cf. AUTHORS.md).   */
 /*                                                                       */
 /* Permission is hereby granted, free of charge, to any person obtaining */
 /* a copy of this software and associated documentation files (the       */
@@ -79,7 +79,7 @@ Size2 Tabs::get_minimum_size() const {
 		}
 	}
 
-	ms.width = 0; //TODO: should make this optional
+	ms.width = 0; // TODO: should make this optional.
 	return ms;
 }
 
@@ -139,7 +139,7 @@ void Tabs::_gui_input(const Ref<InputEvent> &p_event) {
 
 		if (rb_pressing && !mb->is_pressed() && mb->get_button_index() == BUTTON_LEFT) {
 			if (rb_hover != -1) {
-				//pressed
+				// Right mouse button pressed.
 				emit_signal("right_button_pressed", rb_hover);
 			}
 
@@ -149,7 +149,7 @@ void Tabs::_gui_input(const Ref<InputEvent> &p_event) {
 
 		if (cb_pressing && !mb->is_pressed() && mb->get_button_index() == BUTTON_LEFT) {
 			if (cb_hover != -1) {
-				//pressed
+				// Close button pressed.
 				emit_signal("tab_close", cb_hover);
 			}
 
@@ -158,7 +158,7 @@ void Tabs::_gui_input(const Ref<InputEvent> &p_event) {
 		}
 
 		if (mb->is_pressed() && (mb->get_button_index() == BUTTON_LEFT || (select_with_rmb && mb->get_button_index() == BUTTON_RIGHT))) {
-			// clicks
+			// Clicks.
 			Point2 pos(mb->get_position().x, mb->get_position().y);
 
 			if (buttons_visible) {
@@ -195,7 +195,7 @@ void Tabs::_gui_input(const Ref<InputEvent> &p_event) {
 					return;
 				}
 
-				if (tabs[i].cb_rect.has_point(pos)) {
+				if (tabs[i].cb_rect.has_point(pos) && (cb_displaypolicy == CLOSE_BUTTON_SHOW_ALWAYS || (cb_displaypolicy == CLOSE_BUTTON_SHOW_ACTIVE_ONLY && i == current))) {
 					cb_pressing = true;
 					update();
 					return;
@@ -488,7 +488,7 @@ void Tabs::_update_hover() {
 	}
 
 	const Point2 &pos = get_local_mouse_position();
-	// test hovering to display right or close button
+	// Test hovering to display right or close button.
 	int hover_now = -1;
 	int hover_buttons = -1;
 	for (int i = 0; i < tabs.size(); i++) {
@@ -517,7 +517,7 @@ void Tabs::_update_hover() {
 		emit_signal("tab_hover", hover);
 	}
 
-	if (hover_buttons == -1) { // no hover
+	if (hover_buttons == -1) { // No hover.
 		rb_hover = hover_buttons;
 		cb_hover = hover_buttons;
 	}
@@ -692,7 +692,7 @@ bool Tabs::can_drop_data(const Point2 &p_point, const Variant &p_data) const {
 		if (from_path == to_path) {
 			return true;
 		} else if (get_tabs_rearrange_group() != -1) {
-			// drag and drop between other Tabs
+			// Drag and drop between other Tabs.
 			Node *from_node = get_node(from_path);
 			Tabs *from_tabs = Object::cast_to<Tabs>(from_node);
 			if (from_tabs && from_tabs->get_tabs_rearrange_group() == get_tabs_rearrange_group()) {
@@ -727,7 +727,7 @@ void Tabs::drop_data(const Point2 &p_point, const Variant &p_data) {
 			emit_signal("reposition_active_tab_request", hover_now);
 			set_current_tab(hover_now);
 		} else if (get_tabs_rearrange_group() != -1) {
-			// drag and drop between Tabs
+			// Drag and drop between Tabs.
 			Node *from_node = get_node(from_path);
 			Tabs *from_tabs = Object::cast_to<Tabs>(from_node);
 			if (from_tabs && from_tabs->get_tabs_rearrange_group() == get_tabs_rearrange_group()) {

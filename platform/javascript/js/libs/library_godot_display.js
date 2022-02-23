@@ -5,8 +5,8 @@
 /*                           GODOT ENGINE                                */
 /*                      https://godotengine.org                          */
 /*************************************************************************/
-/* Copyright (c) 2007-2021 Juan Linietsky, Ariel Manzur.                 */
-/* Copyright (c) 2014-2021 Godot Engine contributors (cf. AUTHORS.md).   */
+/* Copyright (c) 2007-2022 Juan Linietsky, Ariel Manzur.                 */
+/* Copyright (c) 2014-2022 Godot Engine contributors (cf. AUTHORS.md).   */
 /*                                                                       */
 /* Permission is hereby granted, free of charge, to any person obtaining */
 /* a copy of this software and associated documentation files (the       */
@@ -318,6 +318,18 @@ const GodotDisplay = {
 				return 96;
 			}
 		},
+	},
+
+	// This is implemented as "glGetBufferSubData" in new emscripten versions.
+	// Since we have to support older (pre 2.0.17) emscripten versions, we add this wrapper function instead.
+	godot_js_display_glGetBufferSubData__sig: 'viiii',
+	godot_js_display_glGetBufferSubData__deps: ['$GL', 'emscripten_webgl_get_current_context'],
+	godot_js_display_glGetBufferSubData: function (target, offset, size, data) {
+		const gl_context_handle = _emscripten_webgl_get_current_context(); // eslint-disable-line no-undef
+		const gl = GL.getContext(gl_context_handle);
+		if (gl) {
+			gl.GLctx['getBufferSubData'](target, offset, HEAPU8, data, size);
+		}
 	},
 
 	godot_js_display_is_swap_ok_cancel__sig: 'i',

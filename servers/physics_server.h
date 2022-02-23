@@ -5,8 +5,8 @@
 /*                           GODOT ENGINE                                */
 /*                      https://godotengine.org                          */
 /*************************************************************************/
-/* Copyright (c) 2007-2021 Juan Linietsky, Ariel Manzur.                 */
-/* Copyright (c) 2014-2021 Godot Engine contributors (cf. AUTHORS.md).   */
+/* Copyright (c) 2007-2022 Juan Linietsky, Ariel Manzur.                 */
+/* Copyright (c) 2014-2022 Godot Engine contributors (cf. AUTHORS.md).   */
 /*                                                                       */
 /* Permission is hereby granted, free of charge, to any person obtaining */
 /* a copy of this software and associated documentation files (the       */
@@ -143,6 +143,7 @@ class PhysicsDirectSpaceState : public Object {
 
 private:
 	Dictionary _intersect_ray(const Vector3 &p_from, const Vector3 &p_to, const Vector<RID> &p_exclude = Vector<RID>(), uint32_t p_collision_mask = 0, bool p_collide_with_bodies = true, bool p_collide_with_areas = false);
+	Array _intersect_point(const Vector3 &p_point, int p_max_results = 32, const Vector<RID> &p_exclude = Vector<RID>(), uint32_t p_layers = 0, bool p_collide_with_bodies = true, bool p_collide_with_areas = false);
 	Array _intersect_shape(const Ref<PhysicsShapeQueryParameters> &p_shape_query, int p_max_results = 32);
 	Array _cast_motion(const Ref<PhysicsShapeQueryParameters> &p_shape_query, const Vector3 &p_motion);
 	Array _collide_shape(const Ref<PhysicsShapeQueryParameters> &p_shape_query, int p_max_results = 32);

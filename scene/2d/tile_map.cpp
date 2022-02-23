@@ -5,8 +5,8 @@
 /*                           GODOT ENGINE                                */
 /*                      https://godotengine.org                          */
 /*************************************************************************/
-/* Copyright (c) 2007-2021 Juan Linietsky, Ariel Manzur.                 */
-/* Copyright (c) 2014-2021 Godot Engine contributors (cf. AUTHORS.md).   */
+/* Copyright (c) 2007-2022 Juan Linietsky, Ariel Manzur.                 */
+/* Copyright (c) 2014-2022 Godot Engine contributors (cf. AUTHORS.md).   */
 /*                                                                       */
 /* Permission is hereby granted, free of charge, to any person obtaining */
 /* a copy of this software and associated documentation files (the       */
@@ -90,7 +90,9 @@ void TileMap::_notification(int p_what) {
 				}
 
 				for (Map<PosKey, Quadrant::Occluder>::Element *F = q.occluder_instances.front(); F; F = F->next()) {
-					VS::get_singleton()->free(F->get().id);
+					if (F->get().id.is_valid()) {
+						VS::get_singleton()->free(F->get().id);
+					}
 				}
 				q.occluder_instances.clear();
 			}
@@ -108,6 +110,15 @@ void TileMap::_notification(int p_what) {
 		case NOTIFICATION_LOCAL_TRANSFORM_CHANGED: {
 			if (use_parent) {
 				_recreate_quadrants();
+			}
+
+		} break;
+
+		case NOTIFICATION_VISIBILITY_CHANGED: {
+			for (Map<PosKey, Quadrant>::Element *E = quadrant_map.front(); E; E = E->next()) {
+				for (Map<PosKey, Quadrant::Occluder>::Element *F = E->get().occluder_instances.front(); F; F = F->next()) {
+					VS::get_singleton()->canvas_light_occluder_set_enabled(F->get().id, is_visible());
+				}
 			}
 
 		} break;
@@ -350,9 +361,10 @@ void TileMap::update_dirty_quadrants() {
 		Quadrant &q = *dirty_quadrant_list.first()->self();
 
 		for (List<RID>::Element *E = q.canvas_items.front(); E; E = E->next()) {
-			vs->free(E->get());
+			if (E->get().is_valid()) {
+				vs->free(E->get());
+			}
 		}
-
 		q.canvas_items.clear();
 
 		if (!use_parent) {
@@ -370,7 +382,9 @@ void TileMap::update_dirty_quadrants() {
 		}
 
 		for (Map<PosKey, Quadrant::Occluder>::Element *E = q.occluder_instances.front(); E; E = E->next()) {
-			VS::get_singleton()->free(E->get().id);
+			if (E->get().id.is_valid()) {
+				VS::get_singleton()->free(E->get().id);
+			}
 		}
 		q.occluder_instances.clear();
 		Ref<ShaderMaterial> prev_material;
@@ -675,6 +689,7 @@ void TileMap::update_dirty_quadrants() {
 				VS::get_singleton()->canvas_light_occluder_set_polygon(orid, occluder->get_rid());
 				VS::get_singleton()->canvas_light_occluder_attach_to_canvas(orid, get_canvas());
 				VS::get_singleton()->canvas_light_occluder_set_light_mask(orid, occluder_light_mask);
+				VS::get_singleton()->canvas_light_occluder_set_enabled(orid, is_visible());
 				Quadrant::Occluder oc;
 				oc.xform = xform;
 				oc.id = orid;
@@ -778,13 +793,18 @@ Map<TileMap::PosKey, TileMap::Quadrant>::Element *TileMap::_create_quadrant(cons
 void TileMap::_erase_quadrant(Map<PosKey, Quadrant>::Element *Q) {
 	Quadrant &q = Q->get();
 	if (!use_parent) {
-		Physics2DServer::get_singleton()->free(q.body);
+		if (q.body.is_valid()) {
+			Physics2DServer::get_singleton()->free(q.body);
+			q.body = RID();
+		}
 	} else if (collision_parent) {
 		collision_parent->remove_shape_owner(q.shape_owner_id);
 	}
 
 	for (List<RID>::Element *E = q.canvas_items.front(); E; E = E->next()) {
-		VisualServer::get_singleton()->free(E->get());
+		if (E->get().is_valid()) {
+			VisualServer::get_singleton()->free(E->get());
+		}
 	}
 	q.canvas_items.clear();
 	if (q.dirty_list.in_list()) {
@@ -799,7 +819,9 @@ void TileMap::_erase_quadrant(Map<PosKey, Quadrant>::Element *Q) {
 	}
 
 	for (Map<PosKey, Quadrant::Occluder>::Element *E = q.occluder_instances.front(); E; E = E->next()) {
-		VS::get_singleton()->free(E->get().id);
+		if (E->get().id.is_valid()) {
+			VS::get_singleton()->free(E->get().id);
+		}
 	}
 	q.occluder_instances.clear();
 
@@ -826,8 +848,8 @@ void TileMap::_make_quadrant_dirty(Map<PosKey, Quadrant>::Element *Q, bool updat
 	}
 }
 
-void TileMap::set_cellv(const Vector2 &p_pos, int p_tile, bool p_flip_x, bool p_flip_y, bool p_transpose) {
-	set_cell(p_pos.x, p_pos.y, p_tile, p_flip_x, p_flip_y, p_transpose);
+void TileMap::set_cellv(const Vector2 &p_pos, int p_tile, bool p_flip_x, bool p_flip_y, bool p_transpose, Vector2 p_autotile_coord) {
+	set_cell(p_pos.x, p_pos.y, p_tile, p_flip_x, p_flip_y, p_transpose, p_autotile_coord);
 }
 
 void TileMap::_set_celld(const Vector2 &p_pos, const Dictionary &p_data) {
@@ -1789,7 +1811,7 @@ void TileMap::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_occluder_light_mask"), &TileMap::get_occluder_light_mask);
 
 	ClassDB::bind_method(D_METHOD("set_cell", "x", "y", "tile", "flip_x", "flip_y", "transpose", "autotile_coord"), &TileMap::set_cell, DEFVAL(false), DEFVAL(false), DEFVAL(false), DEFVAL(Vector2()));
-	ClassDB::bind_method(D_METHOD("set_cellv", "position", "tile", "flip_x", "flip_y", "transpose"), &TileMap::set_cellv, DEFVAL(false), DEFVAL(false), DEFVAL(false));
+	ClassDB::bind_method(D_METHOD("set_cellv", "position", "tile", "flip_x", "flip_y", "transpose", "autotile_coord"), &TileMap::set_cellv, DEFVAL(false), DEFVAL(false), DEFVAL(false), DEFVAL(Vector2()));
 	ClassDB::bind_method(D_METHOD("_set_celld", "position", "data"), &TileMap::_set_celld);
 	ClassDB::bind_method(D_METHOD("get_cell", "x", "y"), &TileMap::get_cell);
 	ClassDB::bind_method(D_METHOD("get_cellv", "position"), &TileMap::get_cellv);

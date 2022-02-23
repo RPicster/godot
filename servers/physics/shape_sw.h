@@ -5,8 +5,8 @@
 /*                           GODOT ENGINE                                */
 /*                      https://godotengine.org                          */
 /*************************************************************************/
-/* Copyright (c) 2007-2021 Juan Linietsky, Ariel Manzur.                 */
-/* Copyright (c) 2014-2021 Godot Engine contributors (cf. AUTHORS.md).   */
+/* Copyright (c) 2007-2022 Juan Linietsky, Ariel Manzur.                 */
+/* Copyright (c) 2014-2022 Godot Engine contributors (cf. AUTHORS.md).   */
 /*                                                                       */
 /* Permission is hereby granted, free of charge, to any person obtaining */
 /* a copy of this software and associated documentation files (the       */
@@ -239,7 +239,7 @@ public:
 	_FORCE_INLINE_ real_t get_height() const { return height; }
 	_FORCE_INLINE_ real_t get_radius() const { return radius; }
 
-	virtual real_t get_area() const { return 4.0 / 3.0 * Math_PI * radius * radius * radius + height * Math_PI * radius * radius; }
+	virtual real_t get_area() const { return height * Math_PI * radius * radius; }
 
 	virtual PhysicsServer::ShapeType get_type() const { return PhysicsServer::SHAPE_CAPSULE; }
 

@@ -5,8 +5,8 @@
 /*                           GODOT ENGINE                                */
 /*                      https://godotengine.org                          */
 /*************************************************************************/
-/* Copyright (c) 2007-2021 Juan Linietsky, Ariel Manzur.                 */
-/* Copyright (c) 2014-2021 Godot Engine contributors (cf. AUTHORS.md).   */
+/* Copyright (c) 2007-2022 Juan Linietsky, Ariel Manzur.                 */
+/* Copyright (c) 2014-2022 Godot Engine contributors (cf. AUTHORS.md).   */
 /*                                                                       */
 /* Permission is hereby granted, free of charge, to any person obtaining */
 /* a copy of this software and associated documentation files (the       */
@@ -50,6 +50,7 @@ class SceneTreeTimer : public Reference {
 
 	float time_left;
 	bool process_pause;
+	bool ignore_time_scale = false;
 
 protected:
 	static void _bind_methods();
@@ -60,6 +61,9 @@ public:
 
 	void set_pause_mode_process(bool p_pause_mode_process);
 	bool is_pause_mode_process();
+
+	void set_ignore_time_scale(bool p_ignore);
+	bool is_ignore_time_scale();
 
 	void release_connections();
 

@@ -5,8 +5,8 @@
 /*                           GODOT ENGINE                                */
 /*                      https://godotengine.org                          */
 /*************************************************************************/
-/* Copyright (c) 2007-2021 Juan Linietsky, Ariel Manzur.                 */
-/* Copyright (c) 2014-2021 Godot Engine contributors (cf. AUTHORS.md).   */
+/* Copyright (c) 2007-2022 Juan Linietsky, Ariel Manzur.                 */
+/* Copyright (c) 2014-2022 Godot Engine contributors (cf. AUTHORS.md).   */
 /*                                                                       */
 /* Permission is hereby granted, free of charge, to any person obtaining */
 /* a copy of this software and associated documentation files (the       */
@@ -1486,7 +1486,7 @@ void Variant::set_named(const StringName &p_index, const Variant &p_value, bool 
 					v->set_hsv(v->get_h(), p_value._data._int, v->get_v(), v->a);
 					valid = true;
 				} else if (p_index == CoreStringNames::singleton->v) {
-					v->set_hsv(v->get_h(), v->get_v(), p_value._data._int, v->a);
+					v->set_hsv(v->get_h(), v->get_s(), p_value._data._int, v->a);
 					valid = true;
 				}
 			} else if (p_value.type == Variant::REAL) {

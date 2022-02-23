@@ -5,8 +5,8 @@
 /*                           GODOT ENGINE                                */
 /*                      https://godotengine.org                          */
 /*************************************************************************/
-/* Copyright (c) 2007-2021 Juan Linietsky, Ariel Manzur.                 */
-/* Copyright (c) 2014-2021 Godot Engine contributors (cf. AUTHORS.md).   */
+/* Copyright (c) 2007-2022 Juan Linietsky, Ariel Manzur.                 */
+/* Copyright (c) 2014-2022 Godot Engine contributors (cf. AUTHORS.md).   */
 /*                                                                       */
 /* Permission is hereby granted, free of charge, to any person obtaining */
 /* a copy of this software and associated documentation files (the       */
@@ -57,7 +57,7 @@ public:
 
 	struct Instance {
 		RID instance;
-		Ref<ArrayMesh> mesh;
+		Ref<Mesh> mesh;
 		Ref<Material> material;
 		Ref<SkinReference> skin_reference;
 		RID skeleton;
@@ -103,7 +103,7 @@ protected:
 public:
 	void add_lines(const Vector<Vector3> &p_lines, const Ref<Material> &p_material, bool p_billboard = false, const Color &p_modulate = Color(1, 1, 1));
 	void add_vertices(const Vector<Vector3> &p_vertices, const Ref<Material> &p_material, Mesh::PrimitiveType p_primitive_type, bool p_billboard = false, const Color &p_modulate = Color(1, 1, 1));
-	void add_mesh(const Ref<ArrayMesh> &p_mesh, bool p_billboard = false, const Ref<SkinReference> &p_skin_reference = Ref<SkinReference>(), const Ref<Material> &p_material = Ref<Material>());
+	void add_mesh(const Ref<Mesh> &p_mesh, bool p_billboard = false, const Ref<SkinReference> &p_skin_reference = Ref<SkinReference>(), const Ref<Material> &p_material = Ref<Material>());
 	void add_collision_segments(const Vector<Vector3> &p_lines);
 	void add_collision_triangles(const Ref<TriangleMesh> &p_tmesh);
 	void add_unscaled_billboard(const Ref<Material> &p_material, float p_scale = 1, const Color &p_modulate = Color(1, 1, 1));
@@ -443,6 +443,9 @@ private:
 
 	Vector3 _get_instance_position(const Point2 &p_pos) const;
 	static AABB _calculate_spatial_bounds(const Spatial *p_parent, bool p_exclude_toplevel_transform = true);
+
+	Node *_sanitize_preview_node(Node *p_node) const;
+
 	void _create_preview(const Vector<String> &files) const;
 	void _remove_preview();
 	bool _cyclical_dependency_exists(const String &p_target_scene_path, Node *p_desired_node);

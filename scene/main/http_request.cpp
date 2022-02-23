@@ -5,8 +5,8 @@
 /*                           GODOT ENGINE                                */
 /*                      https://godotengine.org                          */
 /*************************************************************************/
-/* Copyright (c) 2007-2021 Juan Linietsky, Ariel Manzur.                 */
-/* Copyright (c) 2014-2021 Godot Engine contributors (cf. AUTHORS.md).   */
+/* Copyright (c) 2007-2022 Juan Linietsky, Ariel Manzur.                 */
+/* Copyright (c) 2014-2022 Godot Engine contributors (cf. AUTHORS.md).   */
 /*                                                                       */
 /* Permission is hereby granted, free of charge, to any person obtaining */
 /* a copy of this software and associated documentation files (the       */
@@ -383,7 +383,7 @@ bool HTTPRequest::_update_connection() {
 
 void HTTPRequest::_request_done(int p_status, int p_code, const PoolStringArray &p_headers, const PoolByteArray &p_data) {
 	cancel_request();
-	emit_signal("request_completed", p_status, p_code, headers, p_data);
+	emit_signal("request_completed", p_status, p_code, p_headers, p_data);
 }
 
 void HTTPRequest::_notification(int p_what) {

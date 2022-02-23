@@ -5,8 +5,8 @@
 /*                           GODOT ENGINE                                */
 /*                      https://godotengine.org                          */
 /*************************************************************************/
-/* Copyright (c) 2007-2021 Juan Linietsky, Ariel Manzur.                 */
-/* Copyright (c) 2014-2021 Godot Engine contributors (cf. AUTHORS.md).   */
+/* Copyright (c) 2007-2022 Juan Linietsky, Ariel Manzur.                 */
+/* Copyright (c) 2014-2022 Godot Engine contributors (cf. AUTHORS.md).   */
 /*                                                                       */
 /* Permission is hereby granted, free of charge, to any person obtaining */
 /* a copy of this software and associated documentation files (the       */
@@ -30,8 +30,6 @@
 
 #include "scene_tree.h"
 
-#include "modules/modules_enabled.gen.h"
-
 #include "core/io/marshalls.h"
 #include "core/io/resource_loader.h"
 #include "core/message_queue.h"
@@ -51,6 +49,8 @@
 #include "servers/physics_2d_server.h"
 #include "servers/physics_server.h"
 #include "viewport.h"
+
+#include "modules/modules_enabled.gen.h" // For freetype.
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -78,6 +78,14 @@ void SceneTreeTimer::set_pause_mode_process(bool p_pause_mode_process) {
 
 bool SceneTreeTimer::is_pause_mode_process() {
 	return process_pause;
+}
+
+void SceneTreeTimer::set_ignore_time_scale(bool p_ignore) {
+	ignore_time_scale = p_ignore;
+}
+
+bool SceneTreeTimer::is_ignore_time_scale() {
+	return ignore_time_scale;
 }
 
 void SceneTreeTimer::release_connections() {
@@ -557,8 +565,13 @@ bool SceneTree::idle(float p_time) {
 			E = N;
 			continue;
 		}
+
 		float time_left = E->get()->get_time_left();
-		time_left -= p_time;
+		if (E->get()->is_ignore_time_scale()) {
+			time_left -= Engine::get_singleton()->get_idle_frame_step();
+		} else {
+			time_left -= p_time;
+		}
 		E->get()->set_time_left(time_left);
 
 		if (time_left < 0) {
@@ -1129,10 +1142,6 @@ void SceneTree::_update_root_rect() {
 	float viewport_aspect = desired_res.aspect();
 	float video_mode_aspect = video_mode.aspect();
 
-	if (use_font_oversampling && stretch_aspect == STRETCH_ASPECT_IGNORE) {
-		WARN_PRINT("Font oversampling only works with the stretch modes \"Keep Width\", \"Keep Height\" and \"Expand\", not \"Ignore\". To remove this warning, disable Rendering > Quality > Dynamic Fonts > Use Oversampling in the Project Settings.");
-	}
-
 	if (stretch_aspect == STRETCH_ASPECT_IGNORE || Math::is_equal_approx(viewport_aspect, video_mode_aspect)) {
 		//same aspect or ignore aspect
 		viewport_size = desired_res;
@@ -1206,10 +1215,6 @@ void SceneTree::_update_root_rect() {
 			root->set_size_override_stretch(false);
 			root->set_size_override(false, Size2());
 			root->update_canvas_items(); //force them to update just in case
-
-			if (use_font_oversampling) {
-				WARN_PRINT("Font oversampling does not work in \"Viewport\" stretch mode, only \"2D\". To remove this warning, disable Rendering > Quality > Dynamic Fonts > Use Oversampling in the Project Settings.");
-			}
 
 		} break;
 	}
@@ -2050,15 +2055,14 @@ SceneTree::SceneTree() {
 	multiplayer_poll = true;
 	set_multiplayer(Ref<MultiplayerAPI>(memnew(MultiplayerAPI)));
 
-	//root->set_world_2d( Ref<World2D>( memnew( World2D )));
 	root->set_as_audio_listener(true);
 	root->set_as_audio_listener_2d(true);
 	current_scene = nullptr;
 
 	int ref_atlas_size = GLOBAL_DEF_RST("rendering/quality/reflections/atlas_size", 2048);
-	ProjectSettings::get_singleton()->set_custom_property_info("rendering/quality/reflections/atlas_size", PropertyInfo(Variant::INT, "rendering/quality/reflections/atlas_size", PROPERTY_HINT_RANGE, "0,8192,or_greater")); //next_power_of_2 will return a 0 as min value
+	ProjectSettings::get_singleton()->set_custom_property_info("rendering/quality/reflections/atlas_size", PropertyInfo(Variant::INT, "rendering/quality/reflections/atlas_size", PROPERTY_HINT_RANGE, "0,8192,1,or_greater")); // next_power_of_2 will return a 0 as min value.
 	int ref_atlas_subdiv = GLOBAL_DEF_RST("rendering/quality/reflections/atlas_subdiv", 8);
-	ProjectSettings::get_singleton()->set_custom_property_info("rendering/quality/reflections/atlas_subdiv", PropertyInfo(Variant::INT, "rendering/quality/reflections/atlas_subdiv", PROPERTY_HINT_RANGE, "0,32,or_greater")); //next_power_of_2 will return a 0 as min value
+	ProjectSettings::get_singleton()->set_custom_property_info("rendering/quality/reflections/atlas_subdiv", PropertyInfo(Variant::INT, "rendering/quality/reflections/atlas_subdiv", PROPERTY_HINT_RANGE, "0,32,1,or_greater")); // next_power_of_2 will return a 0 as min value.
 	int msaa_mode = GLOBAL_DEF("rendering/quality/filters/msaa", 0);
 	ProjectSettings::get_singleton()->set_custom_property_info("rendering/quality/filters/msaa", PropertyInfo(Variant::INT, "rendering/quality/filters/msaa", PROPERTY_HINT_ENUM, "Disabled,2x,4x,8x,16x,AndroidVR 2x,AndroidVR 4x"));
 	root->set_msaa(Viewport::MSAA(msaa_mode));

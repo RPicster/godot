@@ -5,8 +5,8 @@
 /*                           GODOT ENGINE                                */
 /*                      https://godotengine.org                          */
 /*************************************************************************/
-/* Copyright (c) 2007-2021 Juan Linietsky, Ariel Manzur.                 */
-/* Copyright (c) 2014-2021 Godot Engine contributors (cf. AUTHORS.md).   */
+/* Copyright (c) 2007-2022 Juan Linietsky, Ariel Manzur.                 */
+/* Copyright (c) 2014-2022 Godot Engine contributors (cf. AUTHORS.md).   */
 /*                                                                       */
 /* Permission is hereby granted, free of charge, to any person obtaining */
 /* a copy of this software and associated documentation files (the       */
@@ -105,18 +105,6 @@
 
 #ifndef GLES_OVER_GL
 #define glClearDepth glClearDepthf
-#endif
-
-#ifdef __EMSCRIPTEN__
-#include <emscripten/emscripten.h>
-
-void glGetBufferSubData(GLenum target, GLintptr offset, GLsizeiptr size, GLvoid *data) {
-	/* clang-format off */
-	EM_ASM({
-	    GLctx.getBufferSubData($0, $1, HEAPU8, $2, $3);
-	}, target, offset, data, size);
-	/* clang-format on */
-}
 #endif
 
 void glTexStorage2DCustom(GLenum target, GLsizei levels, GLenum internalformat, GLsizei width, GLsizei height, GLenum format, GLenum type) {
@@ -3404,7 +3392,7 @@ void RasterizerStorageGLES3::mesh_add_surface(RID p_mesh, uint32_t p_format, VS:
 					// UNLESS tangent exists and is also compressed
 					// then it will be oct16 encoded along with tangent
 					attribs[i].normalized = GL_TRUE;
-					attribs[i].size = 4;
+					attribs[i].size = 2;
 					attribs[i].type = GL_SHORT;
 					attributes_stride += 4;
 				} else {
@@ -3425,6 +3413,7 @@ void RasterizerStorageGLES3::mesh_add_surface(RID p_mesh, uint32_t p_format, VS:
 			case VS::ARRAY_TANGENT: {
 				if (p_format & VS::ARRAY_FLAG_USE_OCTAHEDRAL_COMPRESSION) {
 					attribs[i].enabled = false;
+					attribs[VS::ARRAY_NORMAL].size = 4;
 					if (p_format & VS::ARRAY_COMPRESS_TANGENT && p_format & VS::ARRAY_COMPRESS_NORMAL) {
 						// normal and tangent will each be oct16 (2 bytes each)
 						// pack into single vec4<GL_BYTE> for memory bandwidth
@@ -4284,6 +4273,7 @@ void RasterizerStorageGLES3::mesh_render_blend_shapes(Surface *s, const float *p
 
 	shaders.blend_shapes.set_conditional(BlendShapeShaderGLES3::ENABLE_BLEND, false); //first pass does not blend
 	shaders.blend_shapes.set_conditional(BlendShapeShaderGLES3::USE_2D_VERTEX, s->format & VS::ARRAY_FLAG_USE_2D_VERTICES); //use 2D vertices if needed
+	shaders.blend_shapes.set_conditional(BlendShapeShaderGLES3::ENABLE_OCTAHEDRAL_COMPRESSION, s->format & VS::ARRAY_FLAG_USE_OCTAHEDRAL_COMPRESSION); //use octahedral normal compression
 
 	shaders.blend_shapes.bind();
 
@@ -6452,6 +6442,7 @@ void RasterizerStorageGLES3::_particles_process(Particles *p_particles, float p_
 
 	glBindVertexArray(p_particles->particle_vaos[0]);
 
+	glBindBuffer(GL_ARRAY_BUFFER, 0); // ensure this is unbound per WebGL2 spec
 	glBindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, 0, p_particles->particle_buffers[1]);
 
 	//		GLint size = 0;
@@ -6834,6 +6825,7 @@ void RasterizerStorageGLES3::_render_target_clear(RenderTarget *rt) {
 
 		// clean up our texture
 		Texture *t = texture_owner.get(rt->external.texture);
+		t->tex_id = 0;
 		t->alloc_height = 0;
 		t->alloc_width = 0;
 		t->width = 0;
@@ -7343,6 +7335,7 @@ void RasterizerStorageGLES3::render_target_set_external_texture(RID p_render_tar
 
 			// clean up our texture
 			Texture *t = texture_owner.get(rt->external.texture);
+			t->tex_id = 0;
 			t->alloc_height = 0;
 			t->alloc_width = 0;
 			t->width = 0;

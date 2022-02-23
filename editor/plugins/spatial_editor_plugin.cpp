@@ -5,8 +5,8 @@
 /*                           GODOT ENGINE                                */
 /*                      https://godotengine.org                          */
 /*************************************************************************/
-/* Copyright (c) 2007-2021 Juan Linietsky, Ariel Manzur.                 */
-/* Copyright (c) 2014-2021 Godot Engine contributors (cf. AUTHORS.md).   */
+/* Copyright (c) 2007-2022 Juan Linietsky, Ariel Manzur.                 */
+/* Copyright (c) 2014-2022 Godot Engine contributors (cf. AUTHORS.md).   */
 /*                                                                       */
 /* Permission is hereby granted, free of charge, to any person obtaining */
 /* a copy of this software and associated documentation files (the       */
@@ -2043,12 +2043,14 @@ void SpatialEditorViewport::_sinput(const Ref<InputEvent> &p_event) {
 			_menu_option(VIEW_RIGHT);
 		}
 		if (ED_IS_SHORTCUT("spatial_editor/orbit_view_down", p_event)) {
-			cursor.x_rot -= Math_PI / 12.0;
+			// Clamp rotation to roughly -90..90 degrees so the user can't look upside-down and end up disoriented.
+			cursor.x_rot = CLAMP(cursor.x_rot - Math_PI / 12.0, -1.57, 1.57);
 			view_type = VIEW_TYPE_USER;
 			_update_name();
 		}
 		if (ED_IS_SHORTCUT("spatial_editor/orbit_view_up", p_event)) {
-			cursor.x_rot += Math_PI / 12.0;
+			// Clamp rotation to roughly -90..90 degrees so the user can't look upside-down and end up disoriented.
+			cursor.x_rot = CLAMP(cursor.x_rot + Math_PI / 12.0, -1.57, 1.57);
 			view_type = VIEW_TYPE_USER;
 			_update_name();
 		}
@@ -3189,16 +3191,39 @@ void SpatialEditorViewport::_init_gizmo_instance(int p_idx) {
 
 void SpatialEditorViewport::_finish_gizmo_instances() {
 	for (int i = 0; i < 3; i++) {
-		VS::get_singleton()->free(move_gizmo_instance[i]);
-		VS::get_singleton()->free(move_plane_gizmo_instance[i]);
-		VS::get_singleton()->free(rotate_gizmo_instance[i]);
-		VS::get_singleton()->free(scale_gizmo_instance[i]);
-		VS::get_singleton()->free(scale_plane_gizmo_instance[i]);
+		if (move_gizmo_instance[i].is_valid()) {
+			VS::get_singleton()->free(move_gizmo_instance[i]);
+			move_gizmo_instance[i] = RID();
+		}
+
+		if (move_plane_gizmo_instance[i].is_valid()) {
+			VS::get_singleton()->free(move_plane_gizmo_instance[i]);
+			move_plane_gizmo_instance[i] = RID();
+		}
+
+		if (rotate_gizmo_instance[i].is_valid()) {
+			VS::get_singleton()->free(rotate_gizmo_instance[i]);
+			rotate_gizmo_instance[i] = RID();
+		}
+
+		if (scale_gizmo_instance[i].is_valid()) {
+			VS::get_singleton()->free(scale_gizmo_instance[i]);
+			scale_gizmo_instance[i] = RID();
+		}
+
+		if (scale_plane_gizmo_instance[i].is_valid()) {
+			VS::get_singleton()->free(scale_plane_gizmo_instance[i]);
+			scale_plane_gizmo_instance[i] = RID();
+		}
 	}
 
-	// Rotation white outline
-	VS::get_singleton()->free(rotate_gizmo_instance[3]);
+	// Rotation white outline. All of the arrays above have 3 elements, this has 4.
+	if (rotate_gizmo_instance[3].is_valid()) {
+		VS::get_singleton()->free(rotate_gizmo_instance[3]);
+		rotate_gizmo_instance[3] = RID();
+	}
 }
+
 void SpatialEditorViewport::_toggle_camera_preview(bool p_activate) {
 	ERR_FAIL_COND(p_activate && !preview);
 	ERR_FAIL_COND(!p_activate && !previewing);
@@ -3614,6 +3639,35 @@ AABB SpatialEditorViewport::_calculate_spatial_bounds(const Spatial *p_parent, b
 	return bounds;
 }
 
+Node *SpatialEditorViewport::_sanitize_preview_node(Node *p_node) const {
+	Spatial *spatial = Object::cast_to<Spatial>(p_node);
+	if (spatial == nullptr) {
+		Spatial *replacement_node = memnew(Spatial);
+		replacement_node->set_name(p_node->get_name());
+		p_node->replace_by(replacement_node);
+		memdelete(p_node);
+		p_node = replacement_node;
+	} else {
+		VisualInstance *visual_instance = Object::cast_to<VisualInstance>(spatial);
+		if (visual_instance == nullptr) {
+			Spatial *replacement_node = memnew(Spatial);
+			replacement_node->set_name(spatial->get_name());
+			replacement_node->set_visible(spatial->is_visible());
+			replacement_node->set_transform(spatial->get_transform());
+			replacement_node->set_as_toplevel(spatial->is_set_as_toplevel());
+			p_node->replace_by(replacement_node);
+			memdelete(p_node);
+			p_node = replacement_node;
+		}
+	}
+
+	for (int i = 0; i < p_node->get_child_count(); i++) {
+		_sanitize_preview_node(p_node->get_child(i));
+	}
+
+	return p_node;
+}
+
 void SpatialEditorViewport::_create_preview(const Vector<String> &files) const {
 	for (int i = 0; i < files.size(); i++) {
 		String path = files[i];
@@ -3630,6 +3684,7 @@ void SpatialEditorViewport::_create_preview(const Vector<String> &files) const {
 				if (scene.is_valid()) {
 					Node *instance = scene->instance();
 					if (instance) {
+						instance = _sanitize_preview_node(instance);
 						preview_node->add_child(instance);
 					}
 				}
@@ -5853,16 +5908,30 @@ void SpatialEditor::_init_grid() {
 }
 
 void SpatialEditor::_finish_indicators() {
-	VisualServer::get_singleton()->free(origin_instance);
-	VisualServer::get_singleton()->free(origin);
+	if (origin_instance.is_valid()) {
+		VisualServer::get_singleton()->free(origin_instance);
+		origin_instance = RID();
+	}
+
+	if (origin.is_valid()) {
+		VisualServer::get_singleton()->free(origin);
+		origin = RID();
+	}
 
 	_finish_grid();
 }
 
 void SpatialEditor::_finish_grid() {
 	for (int i = 0; i < 3; i++) {
-		VisualServer::get_singleton()->free(grid_instance[i]);
-		VisualServer::get_singleton()->free(grid[i]);
+		if (grid_instance[i].is_valid()) {
+			VisualServer::get_singleton()->free(grid_instance[i]);
+			grid_instance[i] = RID();
+		}
+
+		if (grid[i].is_valid()) {
+			VisualServer::get_singleton()->free(grid[i]);
+			grid[i] = RID();
+		}
 	}
 }
 

@@ -5,8 +5,8 @@
 /*                           GODOT ENGINE                                */
 /*                      https://godotengine.org                          */
 /*************************************************************************/
-/* Copyright (c) 2007-2021 Juan Linietsky, Ariel Manzur.                 */
-/* Copyright (c) 2014-2021 Godot Engine contributors (cf. AUTHORS.md).   */
+/* Copyright (c) 2007-2022 Juan Linietsky, Ariel Manzur.                 */
+/* Copyright (c) 2014-2022 Godot Engine contributors (cf. AUTHORS.md).   */
 /*                                                                       */
 /* Permission is hereby granted, free of charge, to any person obtaining */
 /* a copy of this software and associated documentation files (the       */
@@ -87,7 +87,11 @@ public:
 		String description;
 		String default_value;
 		bool operator<(const ThemeItemDoc &p_theme_item) const {
-			return name < p_theme_item.name;
+			// First sort by the data type, then by name.
+			if (data_type == p_theme_item.data_type) {
+				return name < p_theme_item.name;
+			}
+			return data_type < p_theme_item.data_type;
 		}
 	};
 

@@ -5,8 +5,8 @@
 /*                           GODOT ENGINE                                */
 /*                      https://godotengine.org                          */
 /*************************************************************************/
-/* Copyright (c) 2007-2021 Juan Linietsky, Ariel Manzur.                 */
-/* Copyright (c) 2014-2021 Godot Engine contributors (cf. AUTHORS.md).   */
+/* Copyright (c) 2007-2022 Juan Linietsky, Ariel Manzur.                 */
+/* Copyright (c) 2014-2022 Godot Engine contributors (cf. AUTHORS.md).   */
 /*                                                                       */
 /* Permission is hereby granted, free of charge, to any person obtaining */
 /* a copy of this software and associated documentation files (the       */
@@ -921,7 +921,7 @@ public:
 	virtual void rooms_finalize(RID p_scenario, bool p_generate_pvs, bool p_cull_using_pvs, bool p_use_secondary_pvs, bool p_use_signals, String p_pvs_filename, bool p_use_simple_pvs, bool p_log_pvs_generation) = 0;
 	virtual void rooms_override_camera(RID p_scenario, bool p_override, const Vector3 &p_point, const Vector<Plane> *p_convex) = 0;
 	virtual void rooms_set_active(RID p_scenario, bool p_active) = 0;
-	virtual void rooms_set_params(RID p_scenario, int p_portal_depth_limit) = 0;
+	virtual void rooms_set_params(RID p_scenario, int p_portal_depth_limit, real_t p_roaming_expansion_margin) = 0;
 	virtual void rooms_set_debug_feature(RID p_scenario, RoomsDebugFeature p_feature, bool p_active) = 0;
 	virtual void rooms_update_gameplay_monitor(RID p_scenario, const Vector<Vector3> &p_camera_positions) = 0;
 

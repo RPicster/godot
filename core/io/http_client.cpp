@@ -5,8 +5,8 @@
 /*                           GODOT ENGINE                                */
 /*                      https://godotengine.org                          */
 /*************************************************************************/
-/* Copyright (c) 2007-2021 Juan Linietsky, Ariel Manzur.                 */
-/* Copyright (c) 2014-2021 Godot Engine contributors (cf. AUTHORS.md).   */
+/* Copyright (c) 2007-2022 Juan Linietsky, Ariel Manzur.                 */
+/* Copyright (c) 2014-2022 Godot Engine contributors (cf. AUTHORS.md).   */
 /*                                                                       */
 /* Permission is hereby granted, free of charge, to any person obtaining */
 /* a copy of this software and associated documentation files (the       */
@@ -337,7 +337,7 @@ Error HTTPClient::poll() {
 
 					Error err = ERR_BUG; // Should be at least one entry.
 					while (ip_candidates.size() > 0) {
-						err = tcp_connection->connect_to_host(ip_candidates.front(), conn_port);
+						err = tcp_connection->connect_to_host(ip_candidates.pop_front(), conn_port);
 						if (err == OK) {
 							break;
 						}
@@ -491,7 +491,7 @@ Error HTTPClient::poll() {
 							continue;
 						}
 						if (s.begins_with("content-length:")) {
-							body_size = s.substr(s.find(":") + 1, s.length()).strip_edges().to_int();
+							body_size = s.substr(s.find(":") + 1, s.length()).strip_edges().to_int64();
 							body_left = body_size;
 
 						} else if (s.begins_with("transfer-encoding:")) {

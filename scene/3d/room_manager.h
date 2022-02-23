@@ -5,8 +5,8 @@
 /*                           GODOT ENGINE                                */
 /*                      https://godotengine.org                          */
 /*************************************************************************/
-/* Copyright (c) 2007-2021 Juan Linietsky, Ariel Manzur.                 */
-/* Copyright (c) 2014-2021 Godot Engine contributors (cf. AUTHORS.md).   */
+/* Copyright (c) 2007-2022 Juan Linietsky, Ariel Manzur.                 */
+/* Copyright (c) 2014-2022 Godot Engine contributors (cf. AUTHORS.md).   */
 /*                                                                       */
 /* Permission is hereby granted, free of charge, to any person obtaining */
 /* a copy of this software and associated documentation files (the       */
@@ -87,6 +87,9 @@ public:
 
 	void set_portal_depth_limit(int p_limit);
 	int get_portal_depth_limit() const { return _settings_portal_depth_limit; }
+
+	void set_roaming_expansion_margin(real_t p_dist);
+	real_t get_roaming_expansion_margin() const { return _settings_roaming_expansion_margin; }
 
 	void set_pvs_mode(PVSMode p_mode);
 	PVSMode get_pvs_mode() const;
@@ -256,6 +259,7 @@ private:
 	real_t _overlap_warning_threshold = 1.0;
 	Room::SimplifyInfo _room_simplify_info;
 	int _settings_portal_depth_limit = 16;
+	real_t _settings_roaming_expansion_margin = 1.0;
 
 	// debug override camera
 	ObjectID _godot_preview_camera_ID = -1;
