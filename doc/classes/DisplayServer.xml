@@ -3137,6 +3137,10 @@
 			Window maximize button is disabled.
 			[b]Note:[/b] This flag is implemented on macOS and Windows.
 		</constant>
+		<constant name="WINDOW_FLAG_SKIP_TASKBAR" value="13" enum="WindowFlags">
+			Window won't be visible in the taskbar or in the system's window manager's window list.
+			[b]Note:[/b] This flag is implemented only on Windows.
+		</constant>
 		<constant name="WINDOW_FLAG_MAX" value="13" enum="WindowFlags">
 			Max value of the [enum WindowFlags].
 		</constant>

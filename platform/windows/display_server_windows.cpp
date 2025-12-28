@@ -97,6 +97,8 @@
 
 int constexpr FS_TRANSP_BORDER = 2;
 
+DisplayServerWindows::InputFilterCallback DisplayServerWindows::input_filter_callback = nullptr;
+
 static String format_error_message(DWORD id) {
 	LPWSTR messageBuffer = nullptr;
 	size_t size = FormatMessageW(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
@@ -1632,6 +1634,9 @@ DisplayServer::WindowID DisplayServerWindows::create_sub_window(WindowMode p_mod
 	if (p_flags & WINDOW_FLAG_SHARP_CORNERS_BIT) {
 		wd.sharp_corners = true;
 	}
+	if (p_flags & WINDOW_FLAG_SKIP_TASKBAR_BIT) {
+		wd.skip_taskbar = true;
+	}
 	if (p_flags & WINDOW_FLAG_NO_FOCUS_BIT) {
 		wd.no_focus = true;
 	}
@@ -2693,6 +2698,22 @@ void DisplayServerWindows::window_set_flag(WindowFlags p_flag, bool p_enabled, W
 			}
 			wd.is_popup = p_enabled;
 		} break;
+		case WINDOW_FLAG_SKIP_TASKBAR: {
+			if (wd.skip_taskbar != p_enabled) {
+				wd.skip_taskbar = p_enabled;
+				ITaskbarList *tbl = nullptr;
+				if (SUCCEEDED(CoCreateInstance(CLSID_TaskbarList, nullptr, CLSCTX_INPROC_SERVER, IID_ITaskbarList, (LPVOID *)&tbl))) {
+					if (SUCCEEDED(tbl->HrInit())) {
+						if (p_enabled) {
+							tbl->DeleteTab(wd.hWnd);
+						} else {
+							tbl->AddTab(wd.hWnd);
+						}
+					}
+					SAFE_RELEASE(tbl)
+				}
+			}
+		} break;
 		default:
 			break;
 	}
@@ -2736,6 +2757,9 @@ bool DisplayServerWindows::window_get_flag(WindowFlags p_flag, WindowID p_window
 		} break;
 		case WINDOW_FLAG_POPUP: {
 			return wd.is_popup;
+		} break;
+		case WINDOW_FLAG_SKIP_TASKBAR: {
+			return wd.skip_taskbar;
 		} break;
 		default:
 			break;
@@ -4709,7 +4733,17 @@ LRESULT DisplayServerWindows::WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARA
 		// don't let code below operate on incompletely initialized window objects or missing window_id
 		return _handle_early_window_message(hWnd, uMsg, wParam, lParam);
 	}
-
+	// Filter mouse input if callback is registered
+	if (input_filter_callback) {
+		if ((uMsg >= WM_MOUSEFIRST && uMsg <= WM_MOUSELAST) ||
+		    uMsg == WM_MOUSEWHEEL || uMsg == WM_MOUSEHWHEEL) {
+			
+			if (input_filter_callback(hWnd, uMsg, wParam, lParam)) {
+				// Input blocked by filter
+				return 0;
+			}
+		}
+	}
 	// Process window messages.
 	switch (uMsg) {
 		case WM_GETOBJECT: {
@@ -6312,6 +6346,14 @@ void DisplayServerWindows::_update_tablet_ctx(const String &p_old_driver, const 
 	}
 }
 
+void DisplayServerWindows::set_input_filter_callback(InputFilterCallback callback) {
+	input_filter_callback = callback;
+}
+
+DisplayServerWindows::InputFilterCallback DisplayServerWindows::get_input_filter_callback() {
+	return input_filter_callback;
+}
+
 DisplayServer::WindowID DisplayServerWindows::_create_window(WindowMode p_mode, VSyncMode p_vsync_mode, uint32_t p_flags, const Rect2i &p_rect, bool p_exclusive, WindowID p_transient_parent, HWND p_parent_hwnd) {
 	DWORD dwExStyle;
 	DWORD dwStyle;
@@ -6611,6 +6653,16 @@ DisplayServer::WindowID DisplayServerWindows::_create_window(WindowMode p_mode, 
 			wd.height = p_rect.size.height;
 		}
 
+		if (p_flags & WINDOW_FLAG_SKIP_TASKBAR_BIT) {
+			ITaskbarList *tbl = nullptr;
+			if (SUCCEEDED(CoCreateInstance(CLSID_TaskbarList, nullptr, CLSCTX_INPROC_SERVER, IID_ITaskbarList, (LPVOID *)&tbl))) {
+				if (SUCCEEDED(tbl->HrInit())) {
+					tbl->DeleteTab(wd.hWnd);
+				}
+				SAFE_RELEASE(tbl)
+			}
+		}
+		
 		wd.create_completed = true;
 		// Set size of maximized borderless window (by default it covers the entire screen).
 		if (!p_parent_hwnd && p_mode == WINDOW_MODE_MAXIMIZED && (p_flags & WINDOW_FLAG_BORDERLESS_BIT)) {
