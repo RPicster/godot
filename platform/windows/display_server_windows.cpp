@@ -97,8 +97,6 @@
 
 int constexpr FS_TRANSP_BORDER = 2;
 
-DisplayServerWindows::InputFilterCallback DisplayServerWindows::input_filter_callback = nullptr;
-
 static String format_error_message(DWORD id) {
 	LPWSTR messageBuffer = nullptr;
 	size_t size = FormatMessageW(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
@@ -4733,17 +4731,7 @@ LRESULT DisplayServerWindows::WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARA
 		// don't let code below operate on incompletely initialized window objects or missing window_id
 		return _handle_early_window_message(hWnd, uMsg, wParam, lParam);
 	}
-	// Filter mouse input if callback is registered
-	if (input_filter_callback) {
-		if ((uMsg >= WM_MOUSEFIRST && uMsg <= WM_MOUSELAST) ||
-		    uMsg == WM_MOUSEWHEEL || uMsg == WM_MOUSEHWHEEL) {
-			
-			if (input_filter_callback(hWnd, uMsg, wParam, lParam)) {
-				// Input blocked by filter
-				return 0;
-			}
-		}
-	}
+	
 	// Process window messages.
 	switch (uMsg) {
 		case WM_GETOBJECT: {
@@ -6346,13 +6334,6 @@ void DisplayServerWindows::_update_tablet_ctx(const String &p_old_driver, const 
 	}
 }
 
-void DisplayServerWindows::set_input_filter_callback(InputFilterCallback callback) {
-	input_filter_callback = callback;
-}
-
-DisplayServerWindows::InputFilterCallback DisplayServerWindows::get_input_filter_callback() {
-	return input_filter_callback;
-}
 
 DisplayServer::WindowID DisplayServerWindows::_create_window(WindowMode p_mode, VSyncMode p_vsync_mode, uint32_t p_flags, const Rect2i &p_rect, bool p_exclusive, WindowID p_transient_parent, HWND p_parent_hwnd) {
 	DWORD dwExStyle;

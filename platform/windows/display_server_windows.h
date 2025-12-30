@@ -203,8 +203,6 @@ class DisplayServerWindows : public DisplayServer {
 	friend class DropTargetWindows;
 
 	_THREAD_SAFE_CLASS_
-	// Callback type for external input filtering
-	typedef bool (*InputFilterCallback)(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam);
 	// UXTheme API
 	static bool dark_title_available;
 	static bool use_legacy_dark_mode_before_20H1;
@@ -517,8 +515,6 @@ class DisplayServerWindows : public DisplayServer {
 
 	void initialize_tts() const;
 
-	static InputFilterCallback input_filter_callback;
-
 public:
 	LRESULT WndProcFileDialog(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
 	LRESULT WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
@@ -716,9 +712,6 @@ public:
 
 	virtual void set_context(Context p_context) override;
 	// Callback for external input filtering
-
-	static void set_input_filter_callback(InputFilterCallback callback);
-	static InputFilterCallback get_input_filter_callback();
 
 	virtual bool is_window_transparency_available() const override;
 
