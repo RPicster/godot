@@ -1609,6 +1609,18 @@ DisplayServer::WindowID DisplayServerWindows::get_window_at_screen_position(cons
 DisplayServer::WindowID DisplayServerWindows::create_sub_window(WindowMode p_mode, VSyncMode p_vsync_mode, uint32_t p_flags, const Rect2i &p_rect, bool p_exclusive, WindowID p_transient_parent) {
 	_THREAD_SAFE_METHOD_
 
+	// Add GDScript stack trace logging
+	if (Engine::get_singleton()->is_editor_hint()) {
+		print_line("=== create_sub_window called ===");
+		print_line(vformat("Parameters: mode=%d, flags=%d, rect=%s, exclusive=%s, parent=%d", 
+			p_mode, p_flags, p_rect, p_exclusive ? "true" : "false", p_transient_parent));
+		
+		// This will print the C++ stack, which may include some context
+		if (Thread::get_caller_id() == Thread::get_main_id()) {
+			print_line("Called from main thread");
+		}
+	}
+
 	WindowID window_id = _create_window(p_mode, p_vsync_mode, p_flags, p_rect, p_exclusive, p_transient_parent, NULL);
 	ERR_FAIL_COND_V_MSG(window_id == INVALID_WINDOW_ID, INVALID_WINDOW_ID, "Failed to create sub window.");
 
@@ -2309,11 +2321,10 @@ Size2i DisplayServerWindows::window_get_size_with_decorations(WindowID p_window)
 	return Size2();
 }
 
-void DisplayServerWindows::_get_window_style(bool p_main_window, bool p_initialized, bool p_fullscreen, bool p_multiwindow_fs, bool p_borderless, bool p_resizable, bool p_no_min_btn, bool p_no_max_btn, bool p_minimized, bool p_maximized, bool p_maximized_fs, bool p_no_activate_focus, bool p_embed_child, DWORD &r_style, DWORD &r_style_ex) {
+void DisplayServerWindows::_get_window_style(bool p_main_window, bool p_initialized, bool p_fullscreen, bool p_multiwindow_fs, bool p_borderless, bool p_resizable, bool p_no_min_btn, bool p_no_max_btn, bool p_minimized, bool p_maximized, bool p_maximized_fs, bool p_no_activate_focus, bool p_embed_child, bool p_layered_window, DWORD &r_style, DWORD &r_style_ex) {
 	// Windows docs for window styles:
 	// https://docs.microsoft.com/en-us/windows/win32/winmsg/window-styles
 	// https://docs.microsoft.com/en-us/windows/win32/winmsg/extended-window-styles
-
 	r_style = 0;
 	r_style_ex = WS_EX_WINDOWEDGE;
 	if (p_main_window) {
@@ -2325,6 +2336,10 @@ void DisplayServerWindows::_get_window_style(bool p_main_window, bool p_initiali
 		if (p_initialized) {
 			r_style |= WS_VISIBLE;
 		}
+	}
+
+	if (p_layered_window) {
+		r_style_ex |= WS_EX_LAYERED;
 	}
 
 	if (p_embed_child) {
@@ -2396,11 +2411,10 @@ void DisplayServerWindows::_update_window_style(WindowID p_window, bool p_repain
 
 	ERR_FAIL_COND(!windows.has(p_window));
 	WindowData &wd = windows[p_window];
-
 	DWORD style = 0;
 	DWORD style_ex = 0;
 
-	_get_window_style(p_window == MAIN_WINDOW_ID, wd.initialized, wd.fullscreen, wd.multiwindow_fs, wd.borderless, wd.resizable, wd.no_min_btn, wd.no_max_btn, wd.minimized, wd.maximized, wd.maximized_fs, wd.no_focus || wd.is_popup, wd.parent_hwnd, style, style_ex);
+	_get_window_style(p_window == MAIN_WINDOW_ID, wd.initialized, wd.fullscreen, wd.multiwindow_fs, wd.borderless, wd.resizable, wd.no_min_btn, wd.no_max_btn, wd.minimized, wd.maximized, wd.maximized_fs, wd.no_focus || wd.is_popup, wd.parent_hwnd, wd.layered_window, style, style_ex);
 
 	SetWindowLongPtr(wd.hWnd, GWL_STYLE, style);
 	SetWindowLongPtr(wd.hWnd, GWL_EXSTYLE, style_ex);
@@ -4821,6 +4835,11 @@ LRESULT DisplayServerWindows::WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARA
 			}
 		} break;
 		case WM_ERASEBKGND: {
+			// Don't erase background for transparent windows
+			if (windows[window_id].layered_window) {
+				return 1;  // Tell Windows we handled it (by doing nothing)
+			}
+			
 			Color early_color;
 			if (!_get_window_early_clear_override(early_color)) {
 				break;
@@ -6339,7 +6358,7 @@ DisplayServer::WindowID DisplayServerWindows::_create_window(WindowMode p_mode, 
 	DWORD dwExStyle;
 	DWORD dwStyle;
 
-	_get_window_style(window_id_counter == MAIN_WINDOW_ID, false, (p_mode == WINDOW_MODE_FULLSCREEN || p_mode == WINDOW_MODE_EXCLUSIVE_FULLSCREEN), p_mode != WINDOW_MODE_EXCLUSIVE_FULLSCREEN, p_flags & WINDOW_FLAG_BORDERLESS_BIT, !(p_flags & WINDOW_FLAG_RESIZE_DISABLED_BIT), p_flags & WINDOW_FLAG_MINIMIZE_DISABLED_BIT, p_flags & WINDOW_FLAG_MAXIMIZE_DISABLED_BIT, p_mode == WINDOW_MODE_MINIMIZED, p_mode == WINDOW_MODE_MAXIMIZED, false, (p_flags & WINDOW_FLAG_NO_FOCUS_BIT) | (p_flags & WINDOW_FLAG_POPUP_BIT), p_parent_hwnd, dwStyle, dwExStyle);
+	_get_window_style(window_id_counter == MAIN_WINDOW_ID, false, (p_mode == WINDOW_MODE_FULLSCREEN || p_mode == WINDOW_MODE_EXCLUSIVE_FULLSCREEN), p_mode != WINDOW_MODE_EXCLUSIVE_FULLSCREEN, p_flags & WINDOW_FLAG_BORDERLESS_BIT, !(p_flags & WINDOW_FLAG_RESIZE_DISABLED_BIT), p_flags & WINDOW_FLAG_MINIMIZE_DISABLED_BIT, p_flags & WINDOW_FLAG_MAXIMIZE_DISABLED_BIT, p_mode == WINDOW_MODE_MINIMIZED, p_mode == WINDOW_MODE_MAXIMIZED, false, (p_flags & WINDOW_FLAG_NO_FOCUS_BIT) | (p_flags & WINDOW_FLAG_POPUP_BIT), p_parent_hwnd, p_flags & WINDOW_FLAG_TRANSPARENT, dwStyle, dwExStyle);
 
 	int rq_screen = get_screen_from_rect(p_rect);
 	if (rq_screen < 0) {
@@ -6410,14 +6429,23 @@ DisplayServer::WindowID DisplayServerWindows::_create_window(WindowMode p_mode, 
 		WindowData &wd = windows[id];
 
 		wd.id = id;
+		if (p_flags & WINDOW_FLAG_TRANSPARENT) {
+			wd.layered_window = true;
+		}
+		int width = WindowRect.right - WindowRect.left;
+		int height = WindowRect.bottom - WindowRect.top;
+		if (width <= 0 || height <= 0 || width > 32767 || height > 32767) {
+			ERR_FAIL_V_MSG(INVALID_WINDOW_ID, vformat("Invalid window dimensions: %dx%d", width, height));
+		}
+
 		wd.hWnd = CreateWindowExW(
 				dwExStyle,
 				L"Engine", L"",
 				dwStyle,
 				WindowRect.left,
 				WindowRect.top,
-				WindowRect.right - WindowRect.left,
-				WindowRect.bottom - WindowRect.top,
+				width,
+				height,
 				owner_hwnd,
 				nullptr,
 				hInstance,
@@ -6426,11 +6454,35 @@ DisplayServer::WindowID DisplayServerWindows::_create_window(WindowMode p_mode, 
 				// processed in the window proc
 				reinterpret_cast<void *>(&wd));
 		if (!wd.hWnd) {
-			MessageBoxW(nullptr, L"Window Creation Error.", L"ERROR", MB_OK | MB_ICONEXCLAMATION);
+			DWORD error = GetLastError();
+			String error_msg = format_error_message(error);
+			
+			// Log detailed context with proper type casts
+			print_verbose("=== Window Creation Failed ===");
+			print_verbose(vformat("Window ID: %d", (int)id));
+			print_verbose(vformat("Window Mode: %d", (int)p_mode));
+			print_verbose(vformat("Flags: %d", (int)p_flags));
+			print_verbose(vformat("Rect: pos(%d, %d) size(%d, %d)", (int)p_rect.position.x, (int)p_rect.position.y, (int)p_rect.size.x, (int)p_rect.size.y));
+			print_verbose(vformat("Calculated WindowRect: left=%d, top=%d, right=%d, bottom=%d", (int)WindowRect.left, (int)WindowRect.top, (int)WindowRect.right, (int)WindowRect.bottom));
+			print_verbose(vformat("Width: %d, Height: %d", (int)(WindowRect.right - WindowRect.left), (int)(WindowRect.bottom - WindowRect.top)));
+			print_verbose(vformat("dwStyle: 0x%X, dwExStyle: 0x%X", (unsigned int)dwStyle, (unsigned int)dwExStyle));
+			print_verbose(vformat("Parent HWND: 0x%X", (uint64_t)p_parent_hwnd));
+			print_verbose(vformat("Transient Parent ID: %d", (int)p_transient_parent));
+			print_verbose(vformat("Screen: %d", (int)rq_screen));
+			print_verbose(vformat("Windows Error: %s", error_msg));
+			
 			windows.erase(id);
-			ERR_FAIL_V_MSG(INVALID_WINDOW_ID, "Failed to create Windows OS window.");
+			ERR_FAIL_V_MSG(INVALID_WINDOW_ID, "Failed to create Windows OS window. Error: " + error_msg);
 		}
 
+		// Configure layered window for per-pixel alpha blending
+		if (dwExStyle & WS_EX_LAYERED) {
+			if (!SetLayeredWindowAttributes(wd.hWnd, 0, 255, LWA_ALPHA)) {
+				print_verbose("Warning: SetLayeredWindowAttributes failed for transparent window");
+			} else {
+				print_line("DEBUG: SetLayeredWindowAttributes succeeded");
+			}
+		}
 		wd.parent_hwnd = p_parent_hwnd;
 
 		// Detach the input queue from the parent window.
