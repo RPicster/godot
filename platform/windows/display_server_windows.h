@@ -273,6 +273,11 @@ class DisplayServerWindows : public DisplayServer {
 
 	RBMap<int, Vector2> touch_state;
 
+	Vector<BYTE> icon_buffer_big;
+	HICON icon_big = nullptr;
+	Vector<BYTE> icon_buffer_small;
+	HICON icon_small = nullptr;
+
 	int pressrc;
 	HINSTANCE hInstance; // Holds The Instance Of The Application
 	String rendering_driver;
@@ -382,8 +387,7 @@ class DisplayServerWindows : public DisplayServer {
 	HHOOK mouse_monitor = nullptr;
 	List<WindowID> popup_list;
 	uint64_t time_since_popup = 0;
-	Ref<Image> icon;
-
+	
 	WindowID _create_window(WindowMode p_mode, VSyncMode p_vsync_mode, uint32_t p_flags, const Rect2i &p_rect, bool p_exclusive, WindowID p_transient_parent, HWND p_parent_hwnd);
 	WindowID window_id_counter = MAIN_WINDOW_ID;
 	RBMap<WindowID, WindowData> windows;
@@ -397,6 +401,8 @@ class DisplayServerWindows : public DisplayServer {
 	struct IndicatorData {
 		RID menu_rid;
 		Callable callback;
+		Vector<BYTE> icon_buffer;
+		HICON icon = nullptr;
 	};
 
 	IndicatorID indicator_id_counter = 0;
